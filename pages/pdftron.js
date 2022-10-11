@@ -1,4 +1,5 @@
 import React from 'react';
+import { PDFDocument } from 'pdf-lib';
 
 import Head from 'next/head';
 import styles from '../styles/Home.module.css';
@@ -19,7 +20,6 @@ export default function PDFTRON() {
 const MyComponent = ({ initialDoc }) => {
 	const viewer = React.useRef(null);
 	const [updatedPdfBuffer, setUpdatedPdfBuffer] = React.useState();
-	const [instance, setInstance] = React.useState();
 
 	React.useEffect(() => {
 		import('@pdftron/webviewer').then(() => {
@@ -30,23 +30,40 @@ const MyComponent = ({ initialDoc }) => {
 				},
 				viewer.current
 			).then(instance => {
-				setInstance(instance);
-				const { docViewer } = instance;
-				// you can now call WebViewer APIs here...
+				setViewerInstance(instance);
+				const { documentViewer, annotationManager } = instance.Core;
+
+				// Add header button that will get file data on click
+				instance.UI.setHeaderItems(header => {
+					header.push({
+						type: 'actionButton',
+						img: 'ic-operation-export-line',
+						onClick: async () => {
+							const doc = documentViewer.getDocument();
+							const xfdfString = await annotationManager.exportAnnotations();
+							const buffer = await doc.getFileData({
+								xfdfString,
+							});
+							const uint8arr = new Uint8Array(buffer);
+
+							// USE PDFLIB TO FLATTEN FORM (PDFTRON PAID)
+							const pdfDoc = await PDFDocument.load(uint8arr);
+							const form = pdfDoc.getForm();
+							form.flatten();
+							const pdfBytes = await pdfDoc.save();
+							setUpdatedPdfBuffer(pdfBytes);
+
+							// const blob = new Blob([uint8arr], { type: 'application/pdf' });
+						},
+					});
+				});
 			});
 		});
 	}, []);
 
-	async function exportPDF() {
-		const content = await instance.exportPDF({ flatten: true });
-		console.log(content); // => ArrayBuffer of document with flattened form fields
-		setUpdatedPdfBuffer(content);
-	}
-
 	return (
 		<div style={{ boxSizing: 'border-box' }}>
-			<h1>PDFTRON</h1>
-			<button onClick={exportPDF}>EXPORT</button> <br />
+			<h1>PDFTRON: flatten unsupported (paid), used pdflib to flatten form</h1>
 			<div
 				ref={viewer}
 				style={{ height: '80vh', width: '50%', display: 'inline-block' }}

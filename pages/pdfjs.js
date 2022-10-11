@@ -1,9 +1,8 @@
 import React from 'react';
+import { PDFDocument } from 'pdf-lib';
 
 import Head from 'next/head';
 import styles from '../styles/Home.module.css';
-
-import { PDFDocument } from 'pdf-lib';
 
 export default function PDFJS() {
 	return (
@@ -44,7 +43,7 @@ const MyComponent = ({ initialDoc }) => {
 		});
 	}, []);
 
-	async function flattenForm() {
+	async function flattenPDF() {
 		console.log(formFields);
 		const pdfBuffer = await fetch(initialDoc).then(res => res.arrayBuffer());
 		const pdfDoc = await PDFDocument.load(pdfBuffer);
@@ -68,7 +67,13 @@ const MyComponent = ({ initialDoc }) => {
 
 	return (
 		<div style={{ boxSizing: 'border-box' }}>
-			<h1>PDFJS-EXPRESS</h1>
+			<h1>
+				PDFJS-EXPRESS: flattening annotations unsupported (used pdf lib to
+				flatten form fields only)
+			</h1>
+			<button onClick={flattenPDF} style={{ margin: '20px' }}>
+				FLATTEN
+			</button>
 			<div
 				className="webviewer"
 				ref={viewer}
@@ -85,7 +90,6 @@ const MyComponent = ({ initialDoc }) => {
 					display: 'inline-block',
 				}}
 			></iframe>
-			<button onClick={flattenForm}>FLATTEN</button>
 		</div>
 	);
 };

@@ -49,15 +49,7 @@ const MyComponent = ({ initialDoc }) => {
 		return () => PSPDFKit && PSPDFKit.unload(container);
 	}, []);
 
-	// async function seeFields() {
-	// 	const formFields = await instance.getFormFields();
-	// 	console.log(formFields);
-
-	// 	const formFieldValues = instance.getFormFieldValues();
-	// 	console.log(formFieldValues);
-	// }
-
-	async function exportPDF() {
+	async function flattenPDF() {
 		const content = await instance.exportPDF({ flatten: true });
 		console.log(content); // => ArrayBuffer of document with flattened form fields
 		setUpdatedPdfBuffer(content);
@@ -66,8 +58,14 @@ const MyComponent = ({ initialDoc }) => {
 	return (
 		<>
 			{/* <button onClick={seeFields}>SEE FIELDS</button> */}
-			<h1>PSPDF</h1>
-			<button onClick={exportPDF}>EXPORT</button> <br />
+			<h1>
+				PSPDF: full support for flattening annotations and forms but invasive
+				watermark
+			</h1>
+			<button onClick={flattenPDF} style={{ margin: '20px' }}>
+				FLATTEN{' '}
+			</button>{' '}
+			<br />
 			<div
 				ref={containerRef}
 				style={{ height: '80vh', width: '50%', display: 'inline-block' }}
