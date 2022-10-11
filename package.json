@@ -1,20 +1,27 @@
 {
-  "name": "pdf-edit-test",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "next": "12.3.1",
-    "react": "18.2.0",
-    "react-dom": "18.2.0"
-  },
-  "devDependencies": {
-    "eslint": "8.25.0",
-    "eslint-config-next": "12.3.1"
-  }
+	"name": "pdf-edit-test",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"dev": "next dev",
+		"build": "next build",
+		"start": "next start",
+		"lint": "next lint",
+		"move-static-pdfjsexpress": "cp -a ./node_modules/@pdftron/pdfjs-express/public/. ./public/pdfjsexpress",
+		"move-static-pspdfkit": "cp -R ./node_modules/pspdfkit/dist/pspdfkit-lib public/pspdfkit-lib",
+		"move-static-pdftron": "cp -a ./node_modules/@pdftron/webviewer/public/. public/webviewer"
+	},
+	"dependencies": {
+		"@pdftron/pdfjs-express": "^8.7.0",
+		"@pdftron/webviewer": "^8.9.0",
+		"next": "12.3.1",
+		"pdf-lib": "^1.17.1",
+		"pspdfkit": "^2022.4.3",
+		"react": "18.2.0",
+		"react-dom": "18.2.0"
+	},
+	"devDependencies": {
+		"eslint": "8.25.0",
+		"eslint-config-next": "12.3.1"
+	}
 }
