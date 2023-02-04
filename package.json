@@ -18,7 +18,8 @@
 		"pdf-lib": "^1.17.1",
 		"pspdfkit": "^2022.4.3",
 		"react": "18.2.0",
-		"react-dom": "18.2.0"
+		"react-dom": "18.2.0",
+		"react-pdf": "^6.2.2"
 	},
 	"devDependencies": {
 		"eslint": "8.25.0",
