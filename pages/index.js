@@ -8,6 +8,7 @@ const ReactPdf = dynamic(() => import('../components/reactpdf'), {
 import PsPdfkit from '../components/pspdfkit';
 import PdfTron from '../components/pdftron';
 import PdfJsExpress from '../components/pdfjsexpress';
+import Canvas from '../components/canvas';
 
 export default function Home() {
 	const [active, setActive] = React.useState(null);
@@ -29,6 +30,10 @@ export default function Home() {
 			id: 3,
 			title: 'PDF JS EXPRESS',
 		},
+		{
+			id: 4,
+			title: 'CANVAS',
+		},
 	];
 
 	return (
@@ -44,6 +49,7 @@ function Nav({ active, setActive, buttons }) {
 		<nav style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
 			{buttons.map(button => (
 				<NavButton
+					key={button.id}
 					id={button.id}
 					title={button.title}
 					active={active}
@@ -57,7 +63,6 @@ function Nav({ active, setActive, buttons }) {
 function NavButton({ id, title, active, setActive }) {
 	return (
 		<span
-			key={id}
 			onClick={() => setActive(id)}
 			className={'nav-links' + (active === id ? ' nav-links--active' : '')}
 		>
@@ -76,6 +81,8 @@ function Main({ active }) {
 			return <ReactPdf />;
 		case 3:
 			return <PdfJsExpress />;
+		case 4:
+			return <Canvas />;
 		default:
 			return null;
 	}
