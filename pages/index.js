@@ -9,6 +9,7 @@ import PsPdfkit from '../components/pspdfkit';
 import PdfTron from '../components/pdftron';
 import PdfJsExpress from '../components/pdfjsexpress';
 import Canvas from '../components/canvas';
+import ReactpdfViewer from '../components/reactpdfviewer';
 
 export default function Home() {
 	const [active, setActive] = React.useState(null);
@@ -33,6 +34,10 @@ export default function Home() {
 		{
 			id: 4,
 			title: 'CANVAS',
+		},
+		{
+			id: 5,
+			title: 'REACT PDF VIEWER',
 		},
 	];
 
@@ -83,6 +88,8 @@ function Main({ active }) {
 			return <PdfJsExpress />;
 		case 4:
 			return <Canvas />;
+		case 5:
+			return <ReactpdfViewer />;
 		default:
 			return null;
 	}

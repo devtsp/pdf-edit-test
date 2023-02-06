@@ -1,127 +1,141 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { PDFDocument } from 'pdf-lib';
+import { createGlobalStyle } from 'precise-ui/dist/es6';
 
 const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
-	// canvas events
 	const canvasRef = React.useRef();
-	const [canvasIsDrawing, setCanvasIsDrawing] = React.useState(false);
-	const [canvasCoordinates, setCanvasCoordinates] = React.useState();
+	const clearCanvasBtnRef = React.useRef();
+	const svgPathRef = React.useRef();
 
 	const [isSigning, setIsSigning] = React.useState(false);
-
 	const [pdfInfo, setPdfInfo] = React.useState([]);
-	const [convertedPdf, setConvertedPdf] = React.useState();
+
+	const [signaturePath, setSignaturePath] = React.useState([]);
+
+	const handlePrintSvg = () => {
+		console.log(signaturePath);
+		const reducedPath = signaturePath.reduce(
+			(prev, curr) =>
+				prev[prev.length - 1].toString() == curr.toString()
+					? [...prev]
+					: [...prev, curr],
+			[[]]
+		);
+		const formattedPath = reducedPath.toString().replace(/,/g, ' ');
+		console.log(formattedPath);
+		svgPathRef.current.setAttribute('d', formattedPath);
+	};
 
 	React.useEffect(() => {
-		if (canvasRef.current) {
-			canvasRef.current.onmousedown = function () {
-				setCanvasIsDrawing(true);
-			};
+		function setListeners() {
+			const canvas = canvasRef.current;
+			const ctx = canvas.getContext('2d');
+			let isDrawing = false;
+			canvas.width = canvas.offsetWidth;
+			canvas.height = canvas.offsetHeight;
 
-			canvasRef.current.onmouseup = function () {
-				setCanvasIsDrawing(false);
-			};
+			clearCanvasBtnRef.current.addEventListener('click', () => {
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+				setSignaturePath([]);
+			});
+
+			canvas.addEventListener('mousedown', e => {
+				isDrawing = true;
+				ctx.beginPath();
+				setSignaturePath(prev => [...prev, ['M', e.offsetX, e.offsetY]]);
+			});
+
+			canvas.addEventListener('mouseup', e => {
+				isDrawing = false;
+				setSignaturePath(prev => [...prev, [',Z,']]);
+			});
+
+			canvas.addEventListener('mousemove', e => {
+				if (!isDrawing) return;
+				ctx.lineTo(e.offsetX, e.offsetY);
+				ctx.stroke();
+				setSignaturePath(prev => [...prev, [',L,', e.offsetX, e.offsetY]]);
+			});
 		}
 
-		getPdfInfo();
-	}, [canvasRef.current, isSigning]);
+		setListeners();
+	}, [pdfInfo]);
 
-	async function getPdfInfo() {
-		const formPdfBytes = await fetch(initialDoc).then(res => res.arrayBuffer());
-		const pdfDoc = await PDFDocument.load(formPdfBytes);
-		const { width, height } = pdfDoc.getPage(0).getSize();
-		setPdfInfo({ page: 0, height, width });
-	}
-
-	function handleMouseMovement(e) {
-		const rect = e.target.getBoundingClientRect();
-		const x = (e.clientX - rect.left).toFixed(0);
-		const y = e.clientY - rect.top;
-		const porcentualPositionX = (x * 100) / rect.width;
-		const porcentualPositionY = (y * 100) / rect.height;
-		if (canvasIsDrawing) {
-			setCanvasCoordinates(
-				`Left: ${x} (%${porcentualPositionX.toFixed(
-					2
-				)}), Top: ${y} (%${porcentualPositionY.toFixed(2)})`
+	React.useEffect(() => {
+		async function getPdfInfo() {
+			const formPdfBytes = await fetch(initialDoc).then(res =>
+				res.arrayBuffer()
 			);
+			const pdfDoc = await PDFDocument.load(formPdfBytes);
+			const { width, height } = pdfDoc.getPage(0).getSize();
+			setPdfInfo({ page: 0, height, width });
 		}
-	}
-
-	// async function convertToBase64(fileToLoad) {
-	// 	const buffer = await fetch(fileToLoad).then(r => r.arrayBuffer());
-	// 	const fileReader = new FileReader();
-	// 	fileReader.onload = function (fileLoadedEvent) {
-	// 		const base64 = fileLoadedEvent.target.result;
-	// 		console.log(base64);
-	// 		setPdf64(base64);
-	// 	};
-	// 	// Convert data to base64
-	// 	fileReader.readAsDataURL(new Blob([buffer]));
-	// }
+		getPdfInfo();
+	}, []);
 
 	return (
 		<div style={{ display: 'flex', justifyContent: 'center' }}>
 			<div>
-				<div style={{ display: 'flex', padding: '10px 0' }}>
-					<span>
-						Page h: {pdfInfo.height}, Page w: {pdfInfo.width}
-					</span>
-					<button
-						onClick={() => setIsSigning(prev => !prev)}
-						style={{
-							color: isSigning ? 'white' : 'black',
-							backgroundColor: isSigning ? 'red' : 'white',
-							marginLeft: 'auto',
-						}}
-					>
-						{isSigning ? 'SIGNING' : 'SIGN'}
-					</button>
-				</div>
-				<span>
-					{isSigning
-						? canvasIsDrawing
-							? canvasCoordinates
-							: 'Waiting mouse-down event'
-						: ''}
-				</span>
-				<div
-					style={{
-						border: 'none',
-						margin: 'auto',
-						padding: '0',
-						height: pdfInfo.height,
-						width: pdfInfo.width,
-					}}
-				>
-					{isSigning ? (
+				<div style={{ display: 'flex' }}>
+					<div>
+						<div style={{ display: 'flex', padding: '10px 0' }}>
+							<button
+								onClick={() => setIsSigning(prev => !prev)}
+								style={{
+									color: isSigning ? 'white' : 'black',
+									backgroundColor: isSigning ? 'red' : 'transparent',
+									border: '1px solid',
+									borderRadius: '2px',
+									borderColor: isSigning ? 'red' : 'grey',
+									marginLeft: 'auto',
+								}}
+							>
+								{isSigning ? 'SIGNING' : 'SIGN'}
+							</button>
+							<button ref={clearCanvasBtnRef}>CLEAR</button>
+							<button onClick={handlePrintSvg}>PRINT SVG</button>
+						</div>
 						<div
-							ref={canvasRef}
-							onMouseMove={handleMouseMovement}
 							style={{
-								display: 'flex',
-								alignItems: 'center',
-								justifyContent: 'center',
-								margin: 'auto',
+								border: 'none',
 								height: pdfInfo.height,
 								width: pdfInfo.width,
-								backgroundColor: 'red',
-								opacity: '0.1',
-								position: 'absolute',
-								zIndex: '100',
+								position: 'relative',
 							}}
-						></div>
-					) : null}
-					<iframe
-						src={initialDoc + '#toolbar=0&view=Fit'}
-						style={{
-							border: 'none',
-							height: pdfInfo.height,
-							width: pdfInfo.width,
-							pointerEvents: isSigning ? 'none' : 'all',
-							userSelect: 'none',
-						}}
-					></iframe>
+						>
+							<canvas
+								ref={canvasRef}
+								style={{
+									height: pdfInfo.height,
+									width: pdfInfo.width,
+									position: 'absolute',
+									backgroundColor: 'rgba(0,0,0,.2)',
+									left: isSigning ? '0' : '-99999999999px',
+									zIndex: '100',
+									outline: '3px dashed pink',
+								}}
+							></canvas>
+							<iframe
+								src={initialDoc + '#toolbar=0&view=FitV'}
+								style={{
+									border: 'none',
+									height: pdfInfo.height,
+									width: pdfInfo.width,
+									pointerEvents: isSigning ? 'none' : 'all',
+									userSelect: 'none',
+								}}
+							></iframe>
+						</div>
+					</div>
+					<svg
+						width={pdfInfo.width}
+						height={pdfInfo.height}
+						fill="none"
+						stroke="black"
+						style={{ border: '1px solid black', marginTop: 'auto' }}
+					>
+						<path ref={svgPathRef}></path>
+					</svg>
 				</div>
 			</div>
 		</div>
