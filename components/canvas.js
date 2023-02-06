@@ -1,6 +1,5 @@
 import React from 'react';
 import { PDFDocument } from 'pdf-lib';
-import { createGlobalStyle } from 'precise-ui/dist/es6';
 
 const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 	const canvasRef = React.useRef();
@@ -11,8 +10,9 @@ const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 	const [pdfInfo, setPdfInfo] = React.useState([]);
 
 	const [signaturePath, setSignaturePath] = React.useState([]);
+	const [updatedPdfBuffer, setUpdatedPdfBuffer] = React.useState();
 
-	const handlePrintSvg = () => {
+	const handlePrintSvg = async () => {
 		const reducedPath = signaturePath.reduce(
 			(prev, curr) =>
 				prev[prev.length - 1].toString() == curr.toString()
@@ -21,7 +21,27 @@ const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 			[[]]
 		);
 		const formattedPath = reducedPath.toString().replace(/,/g, ' ');
-		svgPathRef.current.setAttribute('d', formattedPath);
+		// svgPathRef.current.setAttribute('d', formattedPath);
+
+		// const page = pdfDoc.getPage(0);
+		// page.moveTo(0, 0);
+		// page.drawSvgPath(formattedPath);
+		// const pdfBytes = await pdfDoc.save();
+		// setUpdatedPdfBuffer(pdfBytes);
+
+		const buffer = await fetch(initialDoc).then(res => res.arrayBuffer());
+		const uint8arr = new Uint8Array(buffer);
+		const pdfDoc = await PDFDocument.load(uint8arr);
+		// const pdfDoc = await PDFDocument.create();
+
+		const page = pdfDoc.getPage(0);
+		page.moveTo(1, page.getHeight() + 10);
+
+		page.moveDown(25);
+		page.drawSvgPath(formattedPath);
+
+		const pdfBytes = await pdfDoc.save();
+		setUpdatedPdfBuffer(pdfBytes);
 	};
 
 	React.useEffect(() => {
@@ -124,7 +144,7 @@ const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 							></iframe>
 						</div>
 					</div>
-					<svg
+					{/* <svg
 						width={pdfInfo.width}
 						height={pdfInfo.height}
 						fill="none"
@@ -132,7 +152,21 @@ const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 						style={{ border: '1px solid black', marginTop: 'auto' }}
 					>
 						<path fill="none" ref={svgPathRef}></path>
-					</svg>
+					</svg> */}
+					<iframe
+						style={{
+							height: pdfInfo.height,
+							width: pdfInfo.width,
+							marginTop: 'auto',
+						}}
+						src={
+							updatedPdfBuffer
+								? URL.createObjectURL(
+										new Blob([updatedPdfBuffer], { type: 'application/pdf' })
+								  )
+								: initialDoc
+						}
+					></iframe>
 				</div>
 			</div>
 		</div>
