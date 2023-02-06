@@ -1,7 +1,7 @@
 import React from 'react';
 import { PDFDocument } from 'pdf-lib';
 
-const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
+const Canvas = ({ initialDoc = 'mock.pdf' }) => {
 	const canvasRef = React.useRef();
 	const clearCanvasBtnRef = React.useRef();
 	const svgPathRef = React.useRef();
@@ -15,9 +15,7 @@ const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 	const handlePrintSvg = async () => {
 		const reducedPath = signaturePath.reduce(
 			(prev, curr) =>
-				prev[prev.length - 1].toString() == curr.toString()
-					? [...prev]
-					: [...prev, curr],
+				prev[prev.length - 1].toString() == curr.toString() ? [...prev] : [...prev, curr],
 			[[]]
 		);
 		const formattedPath = reducedPath.toString().replace(/,/g, ' ');
@@ -29,7 +27,7 @@ const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 		// const pdfBytes = await pdfDoc.save();
 		// setUpdatedPdfBuffer(pdfBytes);
 
-		const buffer = await fetch(initialDoc).then(res => res.arrayBuffer());
+		const buffer = await fetch(initialDoc).then((res) => res.arrayBuffer());
 		const uint8arr = new Uint8Array(buffer);
 		const pdfDoc = await PDFDocument.load(uint8arr);
 		// const pdfDoc = await PDFDocument.create();
@@ -57,21 +55,21 @@ const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 				setSignaturePath([]);
 			});
 
-			canvas.addEventListener('mousedown', e => {
+			canvas.addEventListener('mousedown', (e) => {
 				isDrawing = true;
 				ctx.beginPath();
-				setSignaturePath(prev => [...prev, ['M', e.offsetX, e.offsetY]]);
+				setSignaturePath((prev) => [...prev, ['M', e.offsetX, e.offsetY]]);
 			});
 
-			canvas.addEventListener('mouseup', e => {
+			canvas.addEventListener('mouseup', (e) => {
 				isDrawing = false;
 			});
 
-			canvas.addEventListener('mousemove', e => {
+			canvas.addEventListener('mousemove', (e) => {
 				if (!isDrawing) return;
 				ctx.lineTo(e.offsetX, e.offsetY);
 				ctx.stroke();
-				setSignaturePath(prev => [...prev, [e.offsetX, e.offsetY]]);
+				setSignaturePath((prev) => [...prev, [e.offsetX, e.offsetY]]);
 			});
 		}
 
@@ -79,10 +77,11 @@ const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 	}, [pdfInfo]);
 
 	React.useEffect(() => {
+		/**
+		 * instanciates PDF-LIB object and get page info (size)
+		 */
 		async function getPdfInfo() {
-			const formPdfBytes = await fetch(initialDoc).then(res =>
-				res.arrayBuffer()
-			);
+			const formPdfBytes = await fetch(initialDoc).then((res) => res.arrayBuffer());
 			const pdfDoc = await PDFDocument.load(formPdfBytes);
 			const { width, height } = pdfDoc.getPage(0).getSize();
 			setPdfInfo({ page: 0, height, width });
@@ -97,7 +96,7 @@ const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 					<div>
 						<div style={{ display: 'flex', padding: '10px 0' }}>
 							<button
-								onClick={() => setIsSigning(prev => !prev)}
+								onClick={() => setIsSigning((prev) => !prev)}
 								style={{
 									color: isSigning ? 'white' : 'black',
 									backgroundColor: isSigning ? 'red' : 'transparent',
@@ -161,10 +160,9 @@ const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 						}}
 						src={
 							updatedPdfBuffer
-								? URL.createObjectURL(
-										new Blob([updatedPdfBuffer], { type: 'application/pdf' })
-								  )
-								: initialDoc
+								? URL.createObjectURL(new Blob([updatedPdfBuffer], { type: 'application/pdf' })) +
+								  '#toolbar=0&view=FitV'
+								: initialDoc + '#toolbar=0&view=FitV'
 						}
 					></iframe>
 				</div>

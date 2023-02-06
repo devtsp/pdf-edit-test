@@ -14,7 +14,7 @@ export default function PdfTron({ initialDoc = 'Acknowledgement HIPAA.pdf' }) {
 					initialDoc,
 				},
 				viewer.current
-			).then(instance => {
+			).then((instance) => {
 				setViewerInstance(instance);
 			});
 		});
@@ -44,17 +44,13 @@ export default function PdfTron({ initialDoc = 'Acknowledgement HIPAA.pdf' }) {
 				SAVE
 			</button>{' '}
 			<br />
-			<div
-				ref={viewer}
-				style={{ height: '80vh', width: '50%', display: 'inline-block' }}
-			></div>
+			<div ref={viewer} style={{ height: '80vh', width: '50%', display: 'inline-block' }}></div>
 			<iframe
 				src={
 					updatedPdfBuffer
-						? URL.createObjectURL(
-								new Blob([updatedPdfBuffer], { type: 'application/pdf' })
-						  )
-						: initialDoc
+						? URL.createObjectURL(new Blob([updatedPdfBuffer], { type: 'application/pdf' })) +
+						  +'#toolbar=0&view=FitV'
+						: initialDoc + '#toolbar=0&view=FitV'
 				}
 				style={{
 					border: 'none',

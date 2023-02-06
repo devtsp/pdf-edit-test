@@ -1,6 +1,5 @@
 * {
 	font-family: Arial, Helvetica, sans-serif;
-	text-align: center;
 	margin: 0;
 }
 
@@ -16,8 +15,8 @@ nav {
 .nav-links {
 	padding: 5px 20px;
 	cursor: pointer;
-	font-weight: 600;
-	font-size: 22px;
+	font-weight: 400;
+	font-size: 18px;
 }
 
 .nav-links--active {

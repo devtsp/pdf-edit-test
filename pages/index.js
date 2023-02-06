@@ -10,6 +10,8 @@ import PdfTron from '../components/pdftron';
 import PdfJsExpress from '../components/pdfjsexpress';
 import Canvas from '../components/canvas';
 import ReactpdfViewer from '../components/reactpdfviewer';
+import PdfAsImage from '../components/pdfAsImage';
+import MapAcroFields from '../components/mapAcroFields';
 
 export default function Home() {
 	const [active, setActive] = React.useState(null);
@@ -39,6 +41,14 @@ export default function Home() {
 			id: 5,
 			title: 'REACT PDF VIEWER',
 		},
+		{
+			id: 6,
+			title: 'PDF AS IMAGE',
+		},
+		{
+			id: 7,
+			title: 'MAP ACRO FIELDS',
+		},
 	];
 
 	return (
@@ -52,7 +62,7 @@ export default function Home() {
 function Nav({ active, setActive, buttons }) {
 	return (
 		<nav style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
-			{buttons.map(button => (
+			{buttons.map((button) => (
 				<NavButton
 					key={button.id}
 					id={button.id}
@@ -90,6 +100,10 @@ function Main({ active }) {
 			return <Canvas />;
 		case 5:
 			return <ReactpdfViewer />;
+		case 6:
+			return <PdfAsImage />;
+		case 7:
+			return <MapAcroFields />;
 		default:
 			return null;
 	}
