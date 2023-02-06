@@ -13,7 +13,6 @@ const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 	const [signaturePath, setSignaturePath] = React.useState([]);
 
 	const handlePrintSvg = () => {
-		console.log(signaturePath);
 		const reducedPath = signaturePath.reduce(
 			(prev, curr) =>
 				prev[prev.length - 1].toString() == curr.toString()
@@ -22,7 +21,6 @@ const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 			[[]]
 		);
 		const formattedPath = reducedPath.toString().replace(/,/g, ' ');
-		console.log(formattedPath);
 		svgPathRef.current.setAttribute('d', formattedPath);
 	};
 
@@ -47,14 +45,13 @@ const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 
 			canvas.addEventListener('mouseup', e => {
 				isDrawing = false;
-				setSignaturePath(prev => [...prev, [',Z,']]);
 			});
 
 			canvas.addEventListener('mousemove', e => {
 				if (!isDrawing) return;
 				ctx.lineTo(e.offsetX, e.offsetY);
 				ctx.stroke();
-				setSignaturePath(prev => [...prev, [',L,', e.offsetX, e.offsetY]]);
+				setSignaturePath(prev => [...prev, [e.offsetX, e.offsetY]]);
 			});
 		}
 
@@ -134,7 +131,7 @@ const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 						stroke="black"
 						style={{ border: '1px solid black', marginTop: 'auto' }}
 					>
-						<path ref={svgPathRef}></path>
+						<path fill="none" ref={svgPathRef}></path>
 					</svg>
 				</div>
 			</div>
