@@ -35,9 +35,9 @@ const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 		// const pdfDoc = await PDFDocument.create();
 
 		const page = pdfDoc.getPage(0);
-		page.moveTo(1, page.getHeight() + 10);
+		page.moveTo(0, page.getHeight());
 
-		page.moveDown(25);
+		page.moveDown(10);
 		page.drawSvgPath(formattedPath);
 
 		const pdfBytes = await pdfDoc.save();
