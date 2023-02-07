@@ -102,14 +102,27 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 			canvas.height = canvas?.offsetHeight;
 		}
 
-		// cancel signature click
+		// cancel signature
 		const handleSignatureStarts = () => {
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 			setSignaturePath([]);
 			setIsSigning(false);
 		};
 
-		// desktop browsers
+		// track pointer
+		const handlePointermove = (e) => {
+			if (!isDrawing) return;
+			ctx.lineTo(e.offsetX, e.offsetY);
+			ctx.stroke();
+			setSignaturePath((prev) => [...prev, [e.offsetX, e.offsetY]]);
+		};
+
+		// finish stroke
+		const handleFinishStroke = (e) => {
+			isDrawing = false;
+		};
+
+		// desktop
 		const handleMousedown = (e) => {
 			isDrawing = true;
 			ctx.beginPath();
@@ -117,49 +130,26 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 			setSignaturePath((prev) => [...prev, ['M', e.offsetX, e.offsetY]]);
 		};
 
-		const handleMousemove = (e) => {
-			if (!isDrawing) return;
-			ctx.lineTo(e.offsetX, e.offsetY);
-			ctx.stroke();
-			setSignaturePath((prev) => [...prev, [e.offsetX, e.offsetY]]);
-		};
-
-		const handleMouseup = (e) => {
-			isDrawing = false;
-		};
-
-		// mobile browsers
+		// mobile
 		const handleTouchstart = (e) => {
 			isDrawing = true;
-			const x = e.targetTouches[0].pageX - rect.left;
-			const y = e.targetTouches[0].pageY - rect.top;
+			const x = e.targetTouches[0].clientX - rect.x;
+			const y = e.targetTouches[0].clientY - rect.y;
 			ctx.beginPath();
 			setSignaturePath((prev) => [...prev, ['M', x, y]]);
 		};
 
-		const handleTouchmove = (e) => {
-			if (!isDrawing) return;
-			const x = e.targetTouches[0].pageX - rect.left;
-			const y = e.targetTouches[0].pageY - rect.top;
-			ctx.lineTo(x, y);
-			ctx.stroke();
-			setSignaturePath((prev) => [...prev, [x, y]]);
-		};
-
-		const handleTouchend = (e) => {
-			isDrawing = false;
-		};
-
 		function setListeners() {
+			// set common signature trigger from button
 			clearCanvasBtnRef.current.addEventListener('click', handleSignatureStarts);
-			// set desktop events
+			// set common pointer move event for both mouse and touch
+			canvas.addEventListener('pointermove', handlePointermove);
+			// set mouse events
 			canvas.addEventListener('mousedown', handleMousedown);
-			canvas.addEventListener('mousemove', handleMousemove);
-			canvas.addEventListener('mouseup', handleMouseup);
-			// set mobile events
+			canvas.addEventListener('mouseup', handleFinishStroke);
+			// set touch events
 			canvas.addEventListener('touchstart', handleTouchstart);
-			canvas.addEventListener('touchmove', handleTouchmove);
-			canvas.addEventListener('touchend', handleTouchend);
+			canvas.addEventListener('touchend', handleFinishStroke);
 		}
 
 		if (canvasRef.current) {
@@ -168,15 +158,15 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 
 		return () => {
 			if (canvas) {
+				// clear common events
 				canvas.removeEventListener('click', handleSignatureStarts);
-				// clear desktop events
+				canvas.removeEventListener('pointermove', handlePointermove);
+				// clear mouse events
 				canvas.removeEventListener('mousedown', handleMousedown);
-				canvas.removeEventListener('mousemove', handleMousemove);
-				canvas.removeEventListener('mouseup', handleMouseup);
-				// clear mobile events
+				canvas.removeEventListener('mouseup', handleFinishStroke);
+				// clear touch events
 				canvas.removeEventListener('touchstart', handleTouchstart);
-				canvas.removeEventListener('touchmove', handleTouchmove);
-				canvas.removeEventListener('touchend', handleTouchend);
+				canvas.removeEventListener('touchend', handleFinishStroke);
 			}
 		};
 	}, [isSigning, canvasRef]);
