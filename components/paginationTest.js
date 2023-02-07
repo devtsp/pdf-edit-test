@@ -68,9 +68,25 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 	const handleSaveSignature = async () => {
 		const reducedPath = signaturePath.reduce(
 			(prev, curr) =>
-				prev[prev.length - 1].toString() == curr.toString() ? [...prev] : [...prev, curr],
+				prev[prev.length - 1].toString() == curr.toString() && curr.length
+					? [...prev]
+					: [...prev, curr],
 			[[]]
 		);
+
+		// Below lines are to remove glitched coordinates of every stroke starting point 'M' (this happen when scrolling while signing)
+		// **
+		for (let coord of reducedPath) {
+			// find every stroke beggining
+			if (coord[0] === 'M') {
+				// Prepend an 'M' to the next coordinate object
+				reducedPath[reducedPath.indexOf(coord) + 1]?.unshift('M');
+				// remove itself from coordinates array (potencially broken/glitched stroke)
+				reducedPath.splice(reducedPath.indexOf(coord), 1);
+			}
+		}
+		// **
+
 		const formattedPath = reducedPath.toString().replace(/,/g, ' ');
 		const newSignatureInput = { type: 'signature', path: formattedPath, page: activePage };
 		setFields((prev) => [...prev, newSignatureInput]);
@@ -217,7 +233,15 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 			style={{ display: 'flex', flexDirection: 'column', width: 'fit-content', margin: '0 auto' }}
 		>
 			{/* TOP CTRL BUTTONS */}
-			<div style={{ display: 'flex', padding: '10px 0', userSelect: 'none' }}>
+			<div
+				style={{
+					display: 'flex',
+					padding: '10px 0',
+					userSelect: 'none',
+					height: '40px',
+					alignItems: 'center',
+				}}
+			>
 				<span
 					onClick={() => setActivePage((prev) => (prev === 1 ? prev : --prev))}
 					style={{
@@ -245,7 +269,7 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 				>
 					▶
 				</span>
-				<div style={{ marginLeft: 'auto', gap: '10px', display: 'flex' }}>
+				<div style={{ marginLeft: 'auto', gap: '10px', display: 'flex', alignItems: 'center' }}>
 					{!isSigning ? (
 						<button
 							onClick={() => setIsSigning((prev) => !prev)}
@@ -262,12 +286,12 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 					) : null}
 					{isSigning ? (
 						<>
-							<button onClick={handleSaveSignature} style={{ color: 'yellowgreen' }}>
+							<span onClick={handleSaveSignature} style={{ cursor: 'pointer', fontSize: '22px' }}>
 								✔
-							</button>
-							<button ref={clearCanvasBtnRef} style={{ color: 'red' }}>
+							</span>
+							<span ref={clearCanvasBtnRef} style={{ cursor: 'pointer', fontSize: '18px' }}>
 								❌
-							</button>
+							</span>
 						</>
 					) : null}
 				</div>
@@ -292,11 +316,12 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 								height: pdfDoc?.getPage(activePage - 1).getSize()?.height,
 								width: pdfDoc?.getPage(activePage - 1).getSize()?.width,
 								position: 'absolute',
-								backgroundColor: 'rgba(0,0,0,.2)',
+								backgroundColor: 'rgba(162, 240, 236,.1)',
 								left: '0',
+								top: '0',
 								zIndex: '300',
-								outline: '2px dashed pink',
-								...(isSigning && { cursor: 'url("icons/pen.png"), crosshair' }),
+								outline: '5px dashed rgb(162, 240, 236)',
+								...(isSigning && { cursor: 'url("icons/pen.png") 0 32, crosshair' }),
 								touchAction: 'none',
 							}}
 						></canvas>
@@ -318,16 +343,16 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 					{/* MAPPED ACRO FIELDS */}
 					{fields
 						.filter(({ page }) => page === activePage)
-						.map(({ type, rectangle, name, value, checked, path = '' }) => {
+						.map(({ type, rectangle, name, value, checked, path = '' }, i) => {
 							if (type === 'signature') {
 								return (
 									<svg
+										key={i}
 										height={pdfDoc?.getPage(activePage - 1).getSize()?.height}
 										width={pdfDoc?.getPage(activePage - 1).getSize()?.width}
 										fill="none"
 										stroke="black"
 										style={{
-											border: '1px solid black',
 											position: 'absolute',
 											zIndex: '100',
 											top: 0,
@@ -340,6 +365,7 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 
 							return (
 								<input
+									key={i}
 									value={value}
 									checked={Boolean(checked)}
 									onChange={handleInputChange}
@@ -362,7 +388,6 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 											? 'radio'
 											: 'text'
 									}
-									key={name}
 									id={name}
 									name={name}
 									data-field-type={type}
