@@ -70,57 +70,81 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 		}
 	}, [pdfDoc]);
 
-	const handlePrintSvg = async () => {
+	const handleSaveSignature = async () => {
 		const reducedPath = signaturePath.reduce(
 			(prev, curr) =>
 				prev[prev.length - 1].toString() == curr.toString() ? [...prev] : [...prev, curr],
 			[[]]
 		);
 		const formattedPath = reducedPath.toString().replace(/,/g, ' ');
-		const buffer = await fetch(`${docConfig.folderPath}/${docConfig.initialDoc}`).then((res) =>
-			res.arrayBuffer()
-		);
-		const uint8arr = new Uint8Array(buffer);
-		const pdfDoc = await PDFDocument.load(uint8arr);
-		const page = pdfDoc.getPage(0);
-		page.moveTo(0, page.getHeight());
-		page.moveDown(10);
-		page.drawSvgPath(formattedPath);
-		const pdfBytes = await pdfDoc.save();
-		setUpdatedPdfBuffer(pdfBytes);
+
+		const newSignatureInput = { type: 'signature', path: formattedPath, page: activePage };
+
+		setFields((prev) => [...prev, newSignatureInput]);
+		setIsSigning(false);
+
+		// const buffer = await fetch(`${docConfig.folderPath}/${docConfig.initialDoc}`).then((res) =>
+		// 	res.arrayBuffer()
+		// );
+		// const uint8arr = new Uint8Array(buffer);
+		// const pdfDoc = await PDFDocument.load(uint8arr);
+		// const page = pdfDoc.getPage(0);
+		// page.moveTo(0, page.getHeight());
+		// page.moveDown(10);
+		// page.drawSvgPath(formattedPath);
+		// const pdfBytes = await pdfDoc.save();
+		// setUpdatedPdfBuffer(pdfBytes);
 	};
 
 	React.useEffect(() => {
+		const canvas = canvasRef.current;
+		const ctx = canvas?.getContext('2d');
+		let isDrawing = false;
+
+		if (canvasRef.current) {
+			canvas.width = canvas?.offsetWidth;
+			canvas.height = canvas?.offsetHeight;
+		}
+
+		const onMouseDown = (e) => {
+			isDrawing = true;
+			ctx.beginPath();
+			setSignaturePath((prev) => [...prev, ['M', e.offsetX, e.offsetY]]);
+		};
+		const onClick = () => {
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			setSignaturePath([]);
+		};
+		const mouseUp = (e) => {
+			isDrawing = false;
+		};
+		const mouseMove = (e) => {
+			if (!isDrawing) return;
+			ctx.lineTo(e.offsetX, e.offsetY);
+			ctx.stroke();
+			setSignaturePath((prev) => [...prev, [e.offsetX, e.offsetY]]);
+		};
+
 		function setListeners() {
-			const canvas = canvasRef.current;
-			const ctx = canvas.getContext('2d');
-			let isDrawing = false;
-			canvas.width = canvas.offsetWidth;
-			canvas.height = canvas.offsetHeight;
-			clearCanvasBtnRef.current.addEventListener('click', () => {
-				ctx.clearRect(0, 0, canvas.width, canvas.height);
-				setSignaturePath([]);
-			});
-			canvas.addEventListener('mousedown', (e) => {
-				isDrawing = true;
-				ctx.beginPath();
-				setSignaturePath((prev) => [...prev, ['M', e.offsetX, e.offsetY]]);
-			});
-			canvas.addEventListener('mouseup', (e) => {
-				isDrawing = false;
-			});
-			canvas.addEventListener('mousemove', (e) => {
-				if (!isDrawing) return;
-				ctx.lineTo(e.offsetX, e.offsetY);
-				ctx.stroke();
-				setSignaturePath((prev) => [...prev, [e.offsetX, e.offsetY]]);
-			});
+			clearCanvasBtnRef.current.addEventListener('click', onClick);
+			canvas.addEventListener('mousedown', onMouseDown);
+			canvas.addEventListener('mouseup', mouseUp);
+			canvas.addEventListener('mousemove', mouseMove);
 		}
 
 		if (canvasRef.current) {
 			setListeners();
 		}
-	}, [pdfInfo, canvasRef]);
+
+		return () => {
+			if (canvas) {
+				canvas.removeEventListener('click', onClick);
+				canvas.removeEventListener('mousedown', onMouseDown);
+				canvas.removeEventListener('mouseup', mouseUp);
+				canvas.removeEventListener('mousemove', mouseMove);
+			}
+		};
+	}, [isSigning, canvasRef]);
 
 	React.useEffect(() => {
 		async function getPdfInfo() {
@@ -143,6 +167,7 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 		newState.find(({ name }) => _name === name).value = e.currentTarget.value;
 		setFields(newState);
 	}
+	console.log(fields);
 
 	return (
 		<div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -173,7 +198,7 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 								{isSigning ? 'SIGNING' : 'SIGN'}
 							</button>
 							<button ref={clearCanvasBtnRef}>CLEAR</button>
-							<button onClick={handlePrintSvg}>PRINT SVG</button>
+							<button onClick={handleSaveSignature}>SAVE SIGNATURE</button>
 						</div>
 
 						{pdfDoc ? (
@@ -185,18 +210,20 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 									position: 'relative',
 								}}
 							>
-								<canvas
-									ref={canvasRef}
-									style={{
-										height: pdfDoc?.getPage(activePage - 1).getSize()?.height,
-										width: pdfDoc?.getPage(activePage - 1).getSize()?.width,
-										position: 'absolute',
-										backgroundColor: 'rgba(0,0,0,.2)',
-										left: isSigning ? '0' : '-99999999999px',
-										zIndex: '100',
-										outline: '3px dashed pink',
-									}}
-								></canvas>
+								{isSigning ? (
+									<canvas
+										ref={canvasRef}
+										style={{
+											height: pdfDoc?.getPage(activePage - 1).getSize()?.height,
+											width: pdfDoc?.getPage(activePage - 1).getSize()?.width,
+											position: 'absolute',
+											backgroundColor: 'rgba(0,0,0,.2)',
+											left: '0',
+											zIndex: '300',
+											outline: '2px dashed pink',
+										}}
+									></canvas>
+								) : null}
 								<div
 									style={{
 										border: 'none',
@@ -210,35 +237,57 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 								></div>
 								{fields
 									.filter(({ page }) => page === activePage)
-									.map(({ type, rectangle, name, value, checked }) => (
-										<input
-											value={value}
-											checked={Boolean(checked)}
-											onChange={handleInputChange}
-											style={{
-												display: 'block',
-												height: `${rectangle.height}px`,
-												width: `${rectangle.width}px`,
-												position: 'absolute',
-												bottom: rectangle.y,
-												left: rectangle.x,
-												backgroundColor: 'transparent',
-												border: 'none',
-												padding: '0',
-											}}
-											type={
-												type === 'PDFCheckBox'
-													? 'checkbox'
-													: type === 'PDFRadioGroup'
-													? 'radio'
-													: 'text'
-											}
-											key={name}
-											id={name}
-											name={name}
-											data-field-type={type}
-										/>
-									))}
+									.map(({ type, rectangle, name, value, checked, path = '' }) => {
+										if (type === 'signature') {
+											return (
+												<svg
+													height={pdfDoc?.getPage(activePage - 1).getSize()?.height}
+													width={pdfDoc?.getPage(activePage - 1).getSize()?.width}
+													fill="none"
+													stroke="black"
+													style={{
+														border: '1px solid black',
+														position: 'absolute',
+														zIndex: '100',
+														top: 0,
+													}}
+												>
+													<path fill="none" d={path}></path>
+												</svg>
+											);
+										}
+
+										return (
+											<input
+												value={value}
+												checked={Boolean(checked)}
+												onChange={handleInputChange}
+												style={{
+													display: 'block',
+													height: `${rectangle.height}px`,
+													width: `${rectangle.width}px`,
+													position: 'absolute',
+													bottom: rectangle.y,
+													left: rectangle.x,
+													backgroundColor: 'transparent',
+													border: 'none',
+													padding: '0',
+													zIndex: '200',
+												}}
+												type={
+													type === 'PDFCheckBox'
+														? 'checkbox'
+														: type === 'PDFRadioGroup'
+														? 'radio'
+														: 'text'
+												}
+												key={name}
+												id={name}
+												name={name}
+												data-field-type={type}
+											/>
+										);
+									})}
 							</div>
 						) : null}
 					</div>
