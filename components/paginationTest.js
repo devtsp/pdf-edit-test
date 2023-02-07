@@ -2,26 +2,23 @@ import React from 'react';
 import { PDFDocument } from 'pdf-lib';
 
 const CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO = {
-	folderPath:
-		'png_docs/Consent to Share Behavioral Health Information for Care Coordination Pursposes',
-	documentAlias: 'Consent to Share Behavioral Health Information for Care Coordination Pursposes',
-	initialDoc: 'Consent_to_Share_Behavioral_Health_Information_for_Care_Coordination_Purposes.pdf',
+	documentRawName: 'Consent to Share Behavioral Health Information for Care Coordination Purposes',
 	acroFieldsConfig: [
 		{
 			page: 1,
-			fieldCount: [0, 4],
+			fieldsRange: [0, 4],
 		},
 		{
 			page: 2,
-			fieldCount: [5, 21],
+			fieldsRange: [5, 21],
 		},
 		{
 			page: 3,
-			fieldCount: [22, 38],
+			fieldsRange: [22, 38],
 		},
 		{
 			page: 4,
-			fieldCount: [39, 54],
+			fieldsRange: [39, 54],
 		},
 	],
 };
@@ -29,29 +26,27 @@ const CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO = {
 const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 	const canvasRef = React.useRef();
 	const clearCanvasBtnRef = React.useRef();
-	// const svgPathRef = React.useRef();
 
-	const [isSigning, setIsSigning] = React.useState(false);
-	const [pdfInfo, setPdfInfo] = React.useState({});
-
+	// svg path of active signing canvas
 	const [signaturePath, setSignaturePath] = React.useState([]);
-	const [updatedPdfBuffer, setUpdatedPdfBuffer] = React.useState();
+	const [isSigning, setIsSigning] = React.useState(false);
+	// const [updatedPdfBuffer, setUpdatedPdfBuffer] = React.useState();
 
+	// pdf-lib instance
 	const [pdfDoc, setPdfDoc] = React.useState();
-	const [activePage, setActivePage] = React.useState(1);
-
+	// mapped fields state and info
 	const [fields, setFields] = React.useState([]);
 
+	const [activePage, setActivePage] = React.useState(1);
+
 	React.useEffect(() => {
-		async function mapFields(documentPath) {
-			const formPdfBytes = await fetch(documentPath).then((res) => res.arrayBuffer());
+		async function mapFields() {
 			const form = pdfDoc.getForm();
 			const formFields = form.getFields();
 			const customFields = formFields.map((field, i) => {
-				const name = field.getName();
 				const widgets = field.acroField.getWidgets();
 				const { page } = docConfig.acroFieldsConfig.find(
-					({ fieldCount }) => i >= fieldCount[0] && i <= fieldCount[1]
+					({ fieldsRange }) => i >= fieldsRange[0] && i <= fieldsRange[1]
 				);
 				return {
 					checked: false,
@@ -66,7 +61,7 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 		}
 
 		if (pdfDoc) {
-			mapFields(`${docConfig.folderPath}/${docConfig.initialDoc}`);
+			mapFields(`forms/${docConfig.documentRawName}/${docConfig.documentRawName}.pdf`);
 		}
 	}, [pdfDoc]);
 
@@ -77,11 +72,10 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 			[[]]
 		);
 		const formattedPath = reducedPath.toString().replace(/,/g, ' ');
-
 		const newSignatureInput = { type: 'signature', path: formattedPath, page: activePage };
-
 		setFields((prev) => [...prev, newSignatureInput]);
 		setIsSigning(false);
+		setSignaturePath('');
 
 		// const buffer = await fetch(`${docConfig.folderPath}/${docConfig.initialDoc}`).then((res) =>
 		// 	res.arrayBuffer()
@@ -96,6 +90,7 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 		// setUpdatedPdfBuffer(pdfBytes);
 	};
 
+	// Set all custom event handlers for canvas
 	React.useEffect(() => {
 		const canvas = canvasRef.current;
 		const ctx = canvas?.getContext('2d');
@@ -111,13 +106,17 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 			ctx.beginPath();
 			setSignaturePath((prev) => [...prev, ['M', e.offsetX, e.offsetY]]);
 		};
+
 		const onClick = () => {
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 			setSignaturePath([]);
+			setIsSigning(false);
 		};
+
 		const mouseUp = (e) => {
 			isDrawing = false;
 		};
+
 		const mouseMove = (e) => {
 			if (!isDrawing) return;
 			ctx.lineTo(e.offsetX, e.offsetY);
@@ -146,16 +145,35 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 		};
 	}, [isSigning, canvasRef]);
 
+	// Fetch and collect all pdf needed info, such as size, acro fields, etc
 	React.useEffect(() => {
-		async function getPdfInfo() {
-			const formPdfBytes = await fetch(`${docConfig.folderPath}/${docConfig.initialDoc}`).then(
-				(res) => res.arrayBuffer()
-			);
+		async function getPdfInfo(documentPath) {
+			const formPdfBytes = await fetch(documentPath).then((res) => res.arrayBuffer());
 			const pdfDoc = await PDFDocument.load(formPdfBytes);
+			const form = pdfDoc.getForm();
+			const formFields = form.getFields();
+
+			// Map pdf-lib acrofields to build custom objects
+			const customFields = formFields.map((field, i) => {
+				const widgets = field.acroField.getWidgets();
+				const { page } = docConfig.acroFieldsConfig.find(
+					({ fieldsRange }) => i >= fieldsRange[0] && i <= fieldsRange[1]
+				);
+				return {
+					checked: false,
+					value: '',
+					type: field.constructor.name,
+					name: field.getName(),
+					rectangle: widgets.map((w) => w.getRectangle())[0],
+					page,
+				};
+			});
+
 			setPdfDoc(pdfDoc);
-			setPdfInfo({ pages: pdfDoc.getPageCount() });
+			setFields(customFields);
 		}
-		getPdfInfo();
+
+		getPdfInfo(`forms/${docConfig.documentRawName}/${docConfig.documentRawName}.pdf`);
 	}, []);
 
 	function handleInputChange(e) {
@@ -167,7 +185,6 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 		newState.find(({ name }) => _name === name).value = e.currentTarget.value;
 		setFields(newState);
 	}
-	console.log(fields);
 
 	return (
 		<div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -180,25 +197,38 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 							</button>
 							<span>{activePage}</span>
 							<button
-								onClick={() => setActivePage((prev) => (prev < pdfInfo.pages ? ++prev : prev))}
+								onClick={() =>
+									setActivePage((prev) => (prev < pdfDoc.getPageCount() ? ++prev : prev))
+								}
 							>
 								next
 							</button>
-							<button
-								onClick={() => setIsSigning((prev) => !prev)}
-								style={{
-									color: isSigning ? 'white' : 'black',
-									backgroundColor: isSigning ? 'red' : 'transparent',
-									border: '1px solid',
-									borderRadius: '2px',
-									borderColor: isSigning ? 'red' : 'grey',
-									marginLeft: 'auto',
-								}}
-							>
-								{isSigning ? 'SIGNING' : 'SIGN'}
-							</button>
-							<button ref={clearCanvasBtnRef}>CLEAR</button>
-							<button onClick={handleSaveSignature}>SAVE SIGNATURE</button>
+							<div style={{ marginLeft: 'auto', gap: '10px', display: 'flex' }}>
+								{!isSigning ? (
+									<button
+										onClick={() => setIsSigning((prev) => !prev)}
+										style={{
+											color: isSigning ? 'white' : 'black',
+											backgroundColor: isSigning ? 'red' : 'transparent',
+											border: '1px solid',
+											borderRadius: '2px',
+											borderColor: isSigning ? 'red' : 'grey',
+										}}
+									>
+										{isSigning ? 'SIGNING' : 'SIGN'}
+									</button>
+								) : null}
+								{isSigning ? (
+									<>
+										<button ref={clearCanvasBtnRef} style={{ color: 'red' }}>
+											CANCEL
+										</button>
+										<button onClick={handleSaveSignature} style={{ color: 'yellowgreen' }}>
+											SAVE
+										</button>
+									</>
+								) : null}
+							</div>
 						</div>
 
 						{pdfDoc ? (
@@ -231,7 +261,7 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 										width: pdfDoc?.getPage(activePage - 1).getSize()?.width,
 										pointerEvents: isSigning ? 'none' : 'all',
 										userSelect: 'none',
-										backgroundImage: `url("${docConfig.folderPath}/${activePage}_${docConfig.documentAlias}.png")`,
+										backgroundImage: `url("forms/${docConfig.documentRawName}/${activePage}_${docConfig.documentRawName}.png")`,
 										backgroundSize: 'contain',
 									}}
 								></div>
