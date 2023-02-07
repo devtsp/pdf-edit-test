@@ -14,14 +14,13 @@
 	"dependencies": {
 		"@pdftron/pdfjs-express": "^8.7.0",
 		"@pdftron/webviewer": "^8.9.0",
+		"buffer": "^6.0.3",
 		"next": "12.3.1",
 		"pdf-lib": "^1.17.1",
-		"precise-ui": "^2.1.17",
 		"pspdfkit": "^2022.4.3",
 		"react": "18.2.0",
 		"react-dom": "18.2.0",
-		"react-pdf": "^6.2.2",
-		"react-view-pdf": "^1.0.0"
+		"react-pdf": "^6.2.2"
 	},
 	"devDependencies": {
 		"eslint": "8.25.0",

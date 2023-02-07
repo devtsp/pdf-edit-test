@@ -1,5 +1,6 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
+import Head from 'next/head';
 
 const ReactPdf = dynamic(() => import('../components/reactpdf'), {
 	ssr: false,
@@ -8,23 +9,24 @@ const ReactPdf = dynamic(() => import('../components/reactpdf'), {
 import PsPdfkit from '../components/pspdfkit';
 import PdfTron from '../components/pdftron';
 import PdfJsExpress from '../components/pdfjsexpress';
-import Canvas from '../components/canvas';
-import ReactpdfViewer from '../components/reactpdfviewer';
+import Signature from '../components/signature';
 import PdfAsImage from '../components/pdfAsImage';
 import MapAcroFields from '../components/mapAcroFields';
+import Pdfjs from '../components/pdfjs';
+import Pagination from '../components/paginationTest';
 
 export default function Home() {
-	const [active, setActive] = React.useState(null);
+	const [active, setActive] = React.useState(9);
 
 	const BUTTONS = [
 		{
 			id: 0,
 			title: 'PDF TRON',
 		},
-		{
-			id: 1,
-			title: 'PS PDF KIT',
-		},
+		// {
+		// 	id: 1,
+		// 	title: 'PS PDF KIT',
+		// },
 		{
 			id: 2,
 			title: 'REACT PDF',
@@ -35,11 +37,7 @@ export default function Home() {
 		},
 		{
 			id: 4,
-			title: 'CANVAS',
-		},
-		{
-			id: 5,
-			title: 'REACT PDF VIEWER',
+			title: 'SIGNATURE',
 		},
 		{
 			id: 6,
@@ -49,10 +47,23 @@ export default function Home() {
 			id: 7,
 			title: 'MAP ACRO FIELDS',
 		},
+		{
+			id: 8,
+			title: 'PDF JS',
+		},
+		{
+			id: 9,
+			title: 'PAGINATION',
+		},
 	];
 
 	return (
 		<>
+			<Head>
+				<title>PDF LABS</title>
+				<meta property="og:title" content="PDF LABS" key="title" />
+				<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.2.228/pdf.min.js"></script>
+			</Head>
 			<Nav setActive={setActive} active={active} buttons={BUTTONS} />
 			<Main active={active} />
 		</>
@@ -97,13 +108,15 @@ function Main({ active }) {
 		case 3:
 			return <PdfJsExpress />;
 		case 4:
-			return <Canvas />;
-		case 5:
-			return <ReactpdfViewer />;
+			return <Signature />;
 		case 6:
 			return <PdfAsImage />;
 		case 7:
 			return <MapAcroFields />;
+		case 8:
+			return <Pdfjs />;
+		case 9:
+			return <Pagination />;
 		default:
 			return null;
 	}

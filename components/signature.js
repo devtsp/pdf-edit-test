@@ -1,10 +1,10 @@
 import React from 'react';
 import { PDFDocument } from 'pdf-lib';
 
-const Canvas = ({ initialDoc = 'mock.pdf' }) => {
+const Canvas = ({ initialDoc = 'Acknowledgement HIPAA.pdf' }) => {
 	const canvasRef = React.useRef();
 	const clearCanvasBtnRef = React.useRef();
-	const svgPathRef = React.useRef();
+	// const svgPathRef = React.useRef();
 
 	const [isSigning, setIsSigning] = React.useState(false);
 	const [pdfInfo, setPdfInfo] = React.useState([]);
@@ -19,25 +19,13 @@ const Canvas = ({ initialDoc = 'mock.pdf' }) => {
 			[[]]
 		);
 		const formattedPath = reducedPath.toString().replace(/,/g, ' ');
-		// svgPathRef.current.setAttribute('d', formattedPath);
-
-		// const page = pdfDoc.getPage(0);
-		// page.moveTo(0, 0);
-		// page.drawSvgPath(formattedPath);
-		// const pdfBytes = await pdfDoc.save();
-		// setUpdatedPdfBuffer(pdfBytes);
-
 		const buffer = await fetch(initialDoc).then((res) => res.arrayBuffer());
 		const uint8arr = new Uint8Array(buffer);
 		const pdfDoc = await PDFDocument.load(uint8arr);
-		// const pdfDoc = await PDFDocument.create();
-
 		const page = pdfDoc.getPage(0);
 		page.moveTo(0, page.getHeight());
-
 		page.moveDown(10);
 		page.drawSvgPath(formattedPath);
-
 		const pdfBytes = await pdfDoc.save();
 		setUpdatedPdfBuffer(pdfBytes);
 	};
@@ -49,22 +37,18 @@ const Canvas = ({ initialDoc = 'mock.pdf' }) => {
 			let isDrawing = false;
 			canvas.width = canvas.offsetWidth;
 			canvas.height = canvas.offsetHeight;
-
 			clearCanvasBtnRef.current.addEventListener('click', () => {
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 				setSignaturePath([]);
 			});
-
 			canvas.addEventListener('mousedown', (e) => {
 				isDrawing = true;
 				ctx.beginPath();
 				setSignaturePath((prev) => [...prev, ['M', e.offsetX, e.offsetY]]);
 			});
-
 			canvas.addEventListener('mouseup', (e) => {
 				isDrawing = false;
 			});
-
 			canvas.addEventListener('mousemove', (e) => {
 				if (!isDrawing) return;
 				ctx.lineTo(e.offsetX, e.offsetY);
@@ -77,9 +61,6 @@ const Canvas = ({ initialDoc = 'mock.pdf' }) => {
 	}, [pdfInfo]);
 
 	React.useEffect(() => {
-		/**
-		 * instanciates PDF-LIB object and get page info (size)
-		 */
 		async function getPdfInfo() {
 			const formPdfBytes = await fetch(initialDoc).then((res) => res.arrayBuffer());
 			const pdfDoc = await PDFDocument.load(formPdfBytes);
