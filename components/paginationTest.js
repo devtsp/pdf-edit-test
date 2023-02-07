@@ -94,6 +94,7 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 	React.useEffect(() => {
 		const canvas = canvasRef.current;
 		const ctx = canvas?.getContext('2d');
+		const rect = canvas?.getBoundingClientRect();
 		let isDrawing = false;
 
 		if (canvasRef.current) {
@@ -101,34 +102,64 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 			canvas.height = canvas?.offsetHeight;
 		}
 
-		const onMouseDown = (e) => {
-			isDrawing = true;
-			ctx.beginPath();
-			setSignaturePath((prev) => [...prev, ['M', e.offsetX, e.offsetY]]);
-		};
-
-		const onClick = () => {
+		// cancel signature click
+		const handleSignatureStarts = () => {
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 			setSignaturePath([]);
 			setIsSigning(false);
 		};
 
-		const mouseUp = (e) => {
-			isDrawing = false;
+		// desktop browsers
+		const handleMousedown = (e) => {
+			isDrawing = true;
+			ctx.beginPath();
+			ctx.moveTo(e.offsetX, e.offsetY);
+			setSignaturePath((prev) => [...prev, ['M', e.offsetX, e.offsetY]]);
 		};
 
-		const mouseMove = (e) => {
+		const handleMousemove = (e) => {
 			if (!isDrawing) return;
 			ctx.lineTo(e.offsetX, e.offsetY);
 			ctx.stroke();
 			setSignaturePath((prev) => [...prev, [e.offsetX, e.offsetY]]);
 		};
 
+		const handleMouseup = (e) => {
+			isDrawing = false;
+		};
+
+		// mobile browsers
+		const handleTouchstart = (e) => {
+			isDrawing = true;
+			const x = e.targetTouches[0].pageX - rect.left;
+			const y = e.targetTouches[0].pageY - rect.top;
+			ctx.beginPath();
+			setSignaturePath((prev) => [...prev, ['M', x, y]]);
+		};
+
+		const handleTouchmove = (e) => {
+			if (!isDrawing) return;
+			const x = e.targetTouches[0].pageX - rect.left;
+			const y = e.targetTouches[0].pageY - rect.top;
+			ctx.lineTo(x, y);
+			ctx.stroke();
+			setSignaturePath((prev) => [...prev, [x, y]]);
+		};
+
+		const handleTouchend = (e) => {
+			isDrawing = false;
+		};
+
 		function setListeners() {
-			clearCanvasBtnRef.current.addEventListener('click', onClick);
-			canvas.addEventListener('mousedown', onMouseDown);
-			canvas.addEventListener('mouseup', mouseUp);
-			canvas.addEventListener('mousemove', mouseMove);
+			clearCanvasBtnRef.current.addEventListener('click', handleSignatureStarts);
+			// set desktop events
+			canvas.addEventListener('mousedown', handleMousedown);
+			canvas.addEventListener('mousemove', handleMousemove);
+			canvas.addEventListener('mouseup', handleMouseup);
+			// set mobile events
+			canvas.addEventListener('touchstart', handleTouchstart);
+			canvas.addEventListener('touchmove', handleTouchmove);
+			canvas.addEventListener('touchend', handleTouchend);
 		}
 
 		if (canvasRef.current) {
@@ -137,10 +168,15 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 
 		return () => {
 			if (canvas) {
-				canvas.removeEventListener('click', onClick);
-				canvas.removeEventListener('mousedown', onMouseDown);
-				canvas.removeEventListener('mouseup', mouseUp);
-				canvas.removeEventListener('mousemove', mouseMove);
+				canvas.removeEventListener('click', handleSignatureStarts);
+				// clear desktop events
+				canvas.removeEventListener('mousedown', handleMousedown);
+				canvas.removeEventListener('mousemove', handleMousemove);
+				canvas.removeEventListener('mouseup', handleMouseup);
+				// clear mobile events
+				canvas.removeEventListener('touchstart', handleTouchstart);
+				canvas.removeEventListener('touchmove', handleTouchmove);
+				canvas.removeEventListener('touchend', handleTouchend);
 			}
 		};
 	}, [isSigning, canvasRef]);
@@ -187,142 +223,164 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 	}
 
 	return (
-		<div style={{ display: 'flex', justifyContent: 'center' }}>
-			<div>
-				<div style={{ display: 'flex' }}>
-					<div>
-						<div style={{ display: 'flex', padding: '10px 0' }}>
-							<button onClick={() => setActivePage((prev) => (prev === 1 ? prev : --prev))}>
-								prev
-							</button>
-							<span>{activePage}</span>
-							<button
-								onClick={() =>
-									setActivePage((prev) => (prev < pdfDoc.getPageCount() ? ++prev : prev))
-								}
-							>
-								next
-							</button>
-							<div style={{ marginLeft: 'auto', gap: '10px', display: 'flex' }}>
-								{!isSigning ? (
-									<button
-										onClick={() => setIsSigning((prev) => !prev)}
-										style={{
-											color: isSigning ? 'white' : 'black',
-											backgroundColor: isSigning ? 'red' : 'transparent',
-											border: '1px solid',
-											borderRadius: '2px',
-											borderColor: isSigning ? 'red' : 'grey',
-										}}
-									>
-										{isSigning ? 'SIGNING' : 'SIGN'}
-									</button>
-								) : null}
-								{isSigning ? (
-									<>
-										<button ref={clearCanvasBtnRef} style={{ color: 'red' }}>
-											CANCEL
-										</button>
-										<button onClick={handleSaveSignature} style={{ color: 'yellowgreen' }}>
-											SAVE
-										</button>
-									</>
-								) : null}
-							</div>
-						</div>
+		<div
+			style={{ display: 'flex', flexDirection: 'column', width: 'fit-content', margin: '0 auto' }}
+		>
+			{/* TOP CTRL BUTTONS */}
+			<div style={{ display: 'flex', padding: '10px 0', userSelect: 'none' }}>
+				<span
+					onClick={() => setActivePage((prev) => (prev === 1 ? prev : --prev))}
+					style={{
+						padding: '0 10px',
+						cursor: 'pointer',
+						opacity: activePage === 1 ? '.2' : '1',
+						pointerEvents: activePage === 1 ? 'none' : 'all',
+					}}
+				>
+					◀
+				</span>
 
-						{pdfDoc ? (
-							<div
-								style={{
-									border: 'none',
-									height: pdfDoc.getPage(activePage - 1).getSize().height,
-									width: pdfDoc.getPage(activePage - 1).getSize().width,
-									position: 'relative',
-								}}
-							>
-								{isSigning ? (
-									<canvas
-										ref={canvasRef}
-										style={{
-											height: pdfDoc?.getPage(activePage - 1).getSize()?.height,
-											width: pdfDoc?.getPage(activePage - 1).getSize()?.width,
-											position: 'absolute',
-											backgroundColor: 'rgba(0,0,0,.2)',
-											left: '0',
-											zIndex: '300',
-											outline: '2px dashed pink',
-										}}
-									></canvas>
-								) : null}
-								<div
-									style={{
-										border: 'none',
-										height: pdfDoc?.getPage(activePage - 1).getSize()?.height,
-										width: pdfDoc?.getPage(activePage - 1).getSize()?.width,
-										pointerEvents: isSigning ? 'none' : 'all',
-										userSelect: 'none',
-										backgroundImage: `url("forms/${docConfig.documentRawName}/${activePage}_${docConfig.documentRawName}.png")`,
-										backgroundSize: 'contain',
-									}}
-								></div>
-								{fields
-									.filter(({ page }) => page === activePage)
-									.map(({ type, rectangle, name, value, checked, path = '' }) => {
-										if (type === 'signature') {
-											return (
-												<svg
-													height={pdfDoc?.getPage(activePage - 1).getSize()?.height}
-													width={pdfDoc?.getPage(activePage - 1).getSize()?.width}
-													fill="none"
-													stroke="black"
-													style={{
-														border: '1px solid black',
-														position: 'absolute',
-														zIndex: '100',
-														top: 0,
-													}}
-												>
-													<path fill="none" d={path}></path>
-												</svg>
-											);
-										}
-
-										return (
-											<input
-												value={value}
-												checked={Boolean(checked)}
-												onChange={handleInputChange}
-												style={{
-													display: 'block',
-													height: `${rectangle.height}px`,
-													width: `${rectangle.width}px`,
-													position: 'absolute',
-													bottom: rectangle.y,
-													left: rectangle.x,
-													backgroundColor: 'transparent',
-													border: 'none',
-													padding: '0',
-													zIndex: '200',
-												}}
-												type={
-													type === 'PDFCheckBox'
-														? 'checkbox'
-														: type === 'PDFRadioGroup'
-														? 'radio'
-														: 'text'
-												}
-												key={name}
-												id={name}
-												name={name}
-												data-field-type={type}
-											/>
-										);
-									})}
-							</div>
-						) : null}
-					</div>
+				<span style={{}}>
+					{' '}
+					Page {activePage}/{pdfDoc?.getPageCount()}{' '}
+				</span>
+				<span
+					onClick={() => setActivePage((prev) => (prev < pdfDoc?.getPageCount() ? ++prev : prev))}
+					style={{
+						padding: '0 10px',
+						cursor: 'pointer',
+						opacity: activePage === pdfDoc?.getPageCount() ? '.2' : '1',
+						pointerEvents: activePage === pdfDoc?.getPageCount() ? 'none' : 'all',
+					}}
+				>
+					▶
+				</span>
+				<div style={{ marginLeft: 'auto', gap: '10px', display: 'flex' }}>
+					{!isSigning ? (
+						<button
+							onClick={() => setIsSigning((prev) => !prev)}
+							style={{
+								color: isSigning ? 'white' : 'black',
+								backgroundColor: isSigning ? 'red' : 'transparent',
+								border: '1px solid',
+								borderRadius: '2px',
+								borderColor: isSigning ? 'red' : 'grey',
+							}}
+						>
+							Sign
+						</button>
+					) : null}
+					{isSigning ? (
+						<>
+							<button onClick={handleSaveSignature} style={{ color: 'yellowgreen' }}>
+								✔
+							</button>
+							<button ref={clearCanvasBtnRef} style={{ color: 'red' }}>
+								❌
+							</button>
+						</>
+					) : null}
 				</div>
 			</div>
+
+			{/* EDTION PANEL */}
+			{pdfDoc ? (
+				// RELATIVE DIV TO HANDLE ABSOLUTES INSIDE
+				<div
+					style={{
+						border: 'none',
+						height: pdfDoc.getPage(activePage - 1).getSize().height,
+						width: pdfDoc.getPage(activePage - 1).getSize().width,
+						position: 'relative',
+					}}
+				>
+					{isSigning ? (
+						/* SIGNATURE CANVAS */
+						<canvas
+							ref={canvasRef}
+							style={{
+								height: pdfDoc?.getPage(activePage - 1).getSize()?.height,
+								width: pdfDoc?.getPage(activePage - 1).getSize()?.width,
+								position: 'absolute',
+								backgroundColor: 'rgba(0,0,0,.2)',
+								left: '0',
+								zIndex: '300',
+								outline: '2px dashed pink',
+								...(isSigning && { cursor: 'url("icons/pen.png"), crosshair' }),
+								touchAction: 'none',
+							}}
+						></canvas>
+					) : null}
+
+					{/* PDF PREVIEW (PNG) */}
+					<div
+						style={{
+							border: 'none',
+							height: pdfDoc?.getPage(activePage - 1).getSize()?.height,
+							width: pdfDoc?.getPage(activePage - 1).getSize()?.width,
+							pointerEvents: isSigning ? 'none' : 'all',
+							userSelect: 'none',
+							backgroundImage: `url("forms/${docConfig.documentRawName}/${activePage}_${docConfig.documentRawName}.png")`,
+							backgroundSize: 'contain',
+						}}
+					></div>
+
+					{/* MAPPED ACRO FIELDS */}
+					{fields
+						.filter(({ page }) => page === activePage)
+						.map(({ type, rectangle, name, value, checked, path = '' }) => {
+							if (type === 'signature') {
+								return (
+									<svg
+										height={pdfDoc?.getPage(activePage - 1).getSize()?.height}
+										width={pdfDoc?.getPage(activePage - 1).getSize()?.width}
+										fill="none"
+										stroke="black"
+										style={{
+											border: '1px solid black',
+											position: 'absolute',
+											zIndex: '100',
+											top: 0,
+										}}
+									>
+										<path fill="none" d={path}></path>
+									</svg>
+								);
+							}
+
+							return (
+								<input
+									value={value}
+									checked={Boolean(checked)}
+									onChange={handleInputChange}
+									style={{
+										display: 'block',
+										height: `${rectangle.height}px`,
+										width: `${rectangle.width}px`,
+										position: 'absolute',
+										bottom: rectangle.y,
+										left: rectangle.x,
+										backgroundColor: 'transparent',
+										border: 'none',
+										padding: '0',
+										zIndex: '200',
+									}}
+									type={
+										type === 'PDFCheckBox'
+											? 'checkbox'
+											: type === 'PDFRadioGroup'
+											? 'radio'
+											: 'text'
+									}
+									key={name}
+									id={name}
+									name={name}
+									data-field-type={type}
+								/>
+							);
+						})}
+				</div>
+			) : null}
 		</div>
 	);
 };
