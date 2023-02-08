@@ -26,46 +26,43 @@ const CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO = {
 const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 	const canvasRef = React.useRef();
 	const clearCanvasBtnRef = React.useRef();
-
-	// svg path of active signing canvas
+	// signature related
 	const [signaturePath, setSignaturePath] = React.useState([]);
 	const [isSigning, setIsSigning] = React.useState(false);
-	// const [updatedPdfBuffer, setUpdatedPdfBuffer] = React.useState();
-
-	// pdf-lib instance
+	// pdf document related
 	const [pdfDoc, setPdfDoc] = React.useState();
-	// mapped fields state and info
 	const [fields, setFields] = React.useState([]);
-
 	const [activePage, setActivePage] = React.useState(1);
+	const [updatedPdfBuffer, setUpdatedPdfBuffer] = React.useState();
 
-	React.useEffect(() => {
-		async function mapFields() {
-			const form = pdfDoc.getForm();
-			const formFields = form.getFields();
-			const customFields = formFields.map((field, i) => {
-				const widgets = field.acroField.getWidgets();
-				const { page } = docConfig.acroFieldsConfig.find(
-					({ fieldsRange }) => i >= fieldsRange[0] && i <= fieldsRange[1]
-				);
-				return {
-					checked: false,
-					value: '',
-					type: field.constructor.name,
-					name: field.getName(),
-					rectangle: widgets.map((w) => w.getRectangle())[0],
-					page,
-				};
-			});
-			setFields(customFields);
-		}
+	async function getPdfInfo(documentPath) {
+		const formPdfBytes = await fetch(documentPath).then((res) => res.arrayBuffer());
+		const pdfDoc = await PDFDocument.load(formPdfBytes);
+		const form = pdfDoc.getForm();
+		const formFields = form.getFields();
 
-		if (pdfDoc) {
-			mapFields(`forms/${docConfig.documentRawName}/${docConfig.documentRawName}.pdf`);
-		}
-	}, [pdfDoc]);
+		// Map pdf-lib acrofields to build custom objects
+		const customFields = formFields.map((field, i) => {
+			const widgets = field.acroField.getWidgets();
+			const { page } = docConfig.acroFieldsConfig.find(
+				({ fieldsRange }) => i >= fieldsRange[0] && i <= fieldsRange[1]
+			);
+			return {
+				checked: false,
+				value: '',
+				type: field.constructor.name,
+				name: field.getName(),
+				rectangle: widgets.map((w) => w.getRectangle())[0],
+				page,
+			};
+		});
+
+		setPdfDoc(pdfDoc);
+		setFields(customFields);
+	}
 
 	const handleSaveSignature = async () => {
+		// Remove repeated coords
 		const reducedPath = signaturePath.reduce(
 			(prev, curr) =>
 				prev[prev.length - 1].toString() == curr.toString() && curr.length
@@ -92,19 +89,50 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 		setFields((prev) => [...prev, newSignatureInput]);
 		setIsSigning(false);
 		setSignaturePath('');
-
-		// const buffer = await fetch(`${docConfig.folderPath}/${docConfig.initialDoc}`).then((res) =>
-		// 	res.arrayBuffer()
-		// );
-		// const uint8arr = new Uint8Array(buffer);
-		// const pdfDoc = await PDFDocument.load(uint8arr);
-		// const page = pdfDoc.getPage(0);
-		// page.moveTo(0, page.getHeight());
-		// page.moveDown(10);
-		// page.drawSvgPath(formattedPath);
-		// const pdfBytes = await pdfDoc.save();
-		// setUpdatedPdfBuffer(pdfBytes);
 	};
+
+	function handleInputChange(e) {
+		const { name: _name } = e.currentTarget;
+		const newState = [...fields];
+		if (e.currentTarget.type === 'checkbox') {
+			const foundField = newState.find(({ name }) => _name === name);
+			newState.find(({ name }) => _name === name).checked = e.currentTarget.checked;
+		}
+		newState.find(({ name }) => _name === name).value = e.currentTarget.value;
+		setFields(newState);
+	}
+
+	async function handleSavePdf() {
+		const form = pdfDoc.getForm();
+		for (let field of fields) {
+			if (field.type === 'PDFTextField') {
+				form.getTextField(field.name).setText(field.value);
+			} else if (field.type === 'PDFCheckBox') {
+				// Actual form checkboxes implementation (saving but losing data on form flattening)
+				// field.checked
+				// 	? form.getCheckBox(field.name).check()
+				// 	: form.getCheckBox(field.name).uncheck();
+
+				// Manually draw ticks instead (workaround))
+				if (field.checked) {
+					const page = pdfDoc.getPage(field.page - 1);
+					page.moveTo(field.rectangle.x - 3, field.rectangle.y + 23);
+					page.drawSvgPath(
+						// svg path of a basic "tick" icon
+						'M21 6.285l-11.16 12.733-6.84-6.018 1.319-1.49 5.341 4.686 9.865-11.196 1.475 1.285z'
+					);
+				}
+			} else if (field.type === 'signature') {
+				const page = pdfDoc.getPage(field.page - 1);
+				page.moveTo(0, page.getHeight());
+				page.drawSvgPath(field.path);
+			}
+		}
+		form.flatten();
+		const pdfBytes = await pdfDoc.save();
+		setUpdatedPdfBuffer(pdfBytes);
+		getPdfInfo(`forms/${docConfig.documentRawName}/${docConfig.documentRawName}.pdf`);
+	}
 
 	// Set all custom event handlers for canvas
 	React.useEffect(() => {
@@ -189,213 +217,200 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 
 	// Fetch and collect all pdf needed info, such as size, acro fields, etc
 	React.useEffect(() => {
-		async function getPdfInfo(documentPath) {
-			const formPdfBytes = await fetch(documentPath).then((res) => res.arrayBuffer());
-			const pdfDoc = await PDFDocument.load(formPdfBytes);
-			const form = pdfDoc.getForm();
-			const formFields = form.getFields();
-
-			// Map pdf-lib acrofields to build custom objects
-			const customFields = formFields.map((field, i) => {
-				const widgets = field.acroField.getWidgets();
-				const { page } = docConfig.acroFieldsConfig.find(
-					({ fieldsRange }) => i >= fieldsRange[0] && i <= fieldsRange[1]
-				);
-				return {
-					checked: false,
-					value: '',
-					type: field.constructor.name,
-					name: field.getName(),
-					rectangle: widgets.map((w) => w.getRectangle())[0],
-					page,
-				};
-			});
-
-			setPdfDoc(pdfDoc);
-			setFields(customFields);
-		}
-
 		getPdfInfo(`forms/${docConfig.documentRawName}/${docConfig.documentRawName}.pdf`);
 	}, []);
 
-	function handleInputChange(e) {
-		const { name: _name } = e.currentTarget;
-		const newState = [...fields];
-		if (e.currentTarget.type === 'checkbox') {
-			newState.find(({ name }) => _name === name).checked = e.currentTarget.checked;
-		}
-		newState.find(({ name }) => _name === name).value = e.currentTarget.value;
-		setFields(newState);
-	}
-
 	return (
-		<div
-			style={{ display: 'flex', flexDirection: 'column', width: 'fit-content', margin: '0 auto' }}
-		>
-			{/* TOP CTRL BUTTONS */}
+		<div style={{ display: 'flex', margin: '0 auto' }}>
 			<div
-				style={{
-					display: 'flex',
-					padding: '10px 0',
-					userSelect: 'none',
-					height: '40px',
-					alignItems: 'center',
-				}}
+				style={{ display: 'flex', flexDirection: 'column', width: 'fit-content', margin: '0 auto' }}
 			>
-				<span
-					onClick={() => setActivePage((prev) => (prev === 1 ? prev : --prev))}
-					style={{
-						padding: '0 10px',
-						cursor: 'pointer',
-						opacity: activePage === 1 ? '.2' : '1',
-						pointerEvents: activePage === 1 ? 'none' : 'all',
-					}}
-				>
-					◀
-				</span>
-
-				<span style={{}}>
-					{' '}
-					Page {activePage}/{pdfDoc?.getPageCount()}{' '}
-				</span>
-				<span
-					onClick={() => setActivePage((prev) => (prev < pdfDoc?.getPageCount() ? ++prev : prev))}
-					style={{
-						padding: '0 10px',
-						cursor: 'pointer',
-						opacity: activePage === pdfDoc?.getPageCount() ? '.2' : '1',
-						pointerEvents: activePage === pdfDoc?.getPageCount() ? 'none' : 'all',
-					}}
-				>
-					▶
-				</span>
-				<div style={{ marginLeft: 'auto', gap: '10px', display: 'flex', alignItems: 'center' }}>
-					{!isSigning ? (
-						<button
-							onClick={() => setIsSigning((prev) => !prev)}
-							style={{
-								color: isSigning ? 'white' : 'black',
-								backgroundColor: isSigning ? 'red' : 'transparent',
-								border: '1px solid',
-								borderRadius: '2px',
-								borderColor: isSigning ? 'red' : 'grey',
-							}}
-						>
-							Sign
-						</button>
-					) : null}
-					{isSigning ? (
-						<>
-							<span onClick={handleSaveSignature} style={{ cursor: 'pointer', fontSize: '22px' }}>
-								✔
-							</span>
-							<span ref={clearCanvasBtnRef} style={{ cursor: 'pointer', fontSize: '18px' }}>
-								❌
-							</span>
-						</>
-					) : null}
-				</div>
-			</div>
-
-			{/* EDTION PANEL */}
-			{pdfDoc ? (
-				// RELATIVE DIV TO HANDLE ABSOLUTES INSIDE
+				{/* TOP CTRL BUTTONS */}
 				<div
 					style={{
-						border: 'none',
-						height: pdfDoc.getPage(activePage - 1).getSize().height,
-						width: pdfDoc.getPage(activePage - 1).getSize().width,
-						position: 'relative',
+						display: 'flex',
+						padding: '10px 0',
+						userSelect: 'none',
+						height: '40px',
+						alignItems: 'center',
 					}}
 				>
-					{isSigning ? (
-						/* SIGNATURE CANVAS */
-						<canvas
-							ref={canvasRef}
-							style={{
-								height: pdfDoc?.getPage(activePage - 1).getSize()?.height,
-								width: pdfDoc?.getPage(activePage - 1).getSize()?.width,
-								position: 'absolute',
-								backgroundColor: 'rgba(162, 240, 236,.1)',
-								left: '0',
-								top: '0',
-								zIndex: '300',
-								outline: '5px dashed rgb(162, 240, 236)',
-								...(isSigning && { cursor: 'url("icons/pen.png") 0 32, crosshair' }),
-								touchAction: 'none',
-							}}
-						></canvas>
-					) : null}
+					<span
+						onClick={() => setActivePage((prev) => (prev === 1 ? prev : --prev))}
+						style={{
+							padding: '0 10px',
+							cursor: 'pointer',
+							opacity: activePage === 1 ? '.2' : '1',
+							pointerEvents: activePage === 1 ? 'none' : 'all',
+						}}
+					>
+						◀
+					</span>
 
-					{/* PDF PREVIEW (PNG) */}
+					<span style={{}}>
+						{' '}
+						Page {activePage}/{pdfDoc?.getPageCount()}{' '}
+					</span>
+					<span
+						onClick={() => setActivePage((prev) => (prev < pdfDoc?.getPageCount() ? ++prev : prev))}
+						style={{
+							padding: '0 10px',
+							cursor: 'pointer',
+							opacity: activePage === pdfDoc?.getPageCount() ? '.2' : '1',
+							pointerEvents: activePage === pdfDoc?.getPageCount() ? 'none' : 'all',
+						}}
+					>
+						▶
+					</span>
+					<div style={{ marginLeft: 'auto', gap: '10px', display: 'flex', alignItems: 'center' }}>
+						{!isSigning ? (
+							<button
+								onClick={() => setIsSigning((prev) => !prev)}
+								style={{
+									color: isSigning ? 'white' : 'black',
+									backgroundColor: isSigning ? 'red' : 'transparent',
+									border: '1px solid',
+									borderRadius: '2px',
+									borderColor: isSigning ? 'red' : 'grey',
+								}}
+							>
+								Sign
+							</button>
+						) : null}
+						{isSigning ? (
+							<>
+								<span onClick={handleSaveSignature} style={{ cursor: 'pointer', fontSize: '22px' }}>
+									✔
+								</span>
+								<span ref={clearCanvasBtnRef} style={{ cursor: 'pointer', fontSize: '18px' }}>
+									❌
+								</span>
+							</>
+						) : null}
+					</div>
+				</div>
+
+				{/* EDTION PANEL */}
+				{pdfDoc ? (
+					// RELATIVE DIV TO HANDLE ABSOLUTES INSIDE
 					<div
 						style={{
 							border: 'none',
-							height: pdfDoc?.getPage(activePage - 1).getSize()?.height,
-							width: pdfDoc?.getPage(activePage - 1).getSize()?.width,
-							pointerEvents: isSigning ? 'none' : 'all',
-							userSelect: 'none',
-							backgroundImage: `url("forms/${docConfig.documentRawName}/${activePage}_${docConfig.documentRawName}.png")`,
-							backgroundSize: 'contain',
+							height: pdfDoc.getPage(activePage - 1).getSize().height,
+							width: pdfDoc.getPage(activePage - 1).getSize().width,
+							position: 'relative',
 						}}
-					></div>
+					>
+						{isSigning ? (
+							/* SIGNATURE CANVAS */
+							<canvas
+								ref={canvasRef}
+								style={{
+									height: pdfDoc?.getPage(activePage - 1).getSize()?.height,
+									width: pdfDoc?.getPage(activePage - 1).getSize()?.width,
+									position: 'absolute',
+									backgroundColor: 'rgba(162, 240, 236,.1)',
+									left: '0',
+									top: '0',
+									zIndex: '300',
+									outline: '5px dashed rgb(162, 240, 236)',
+									...(isSigning && { cursor: 'url("icons/pen.png") 0 32, crosshair' }),
+									touchAction: 'none',
+								}}
+							></canvas>
+						) : null}
 
-					{/* MAPPED ACRO FIELDS */}
-					{fields
-						.filter(({ page }) => page === activePage)
-						.map(({ type, rectangle, name, value, checked, path = '' }, i) => {
-							if (type === 'signature') {
+						{/* PDF PREVIEW (PNG) */}
+						<div
+							style={{
+								border: 'none',
+								height: pdfDoc?.getPage(activePage - 1).getSize()?.height,
+								width: pdfDoc?.getPage(activePage - 1).getSize()?.width,
+								pointerEvents: isSigning ? 'none' : 'all',
+								userSelect: 'none',
+								backgroundImage: `url("forms/${docConfig.documentRawName}/${activePage}_${docConfig.documentRawName}.png")`,
+								backgroundSize: 'contain',
+							}}
+						></div>
+
+						{/* MAPPED ACRO FIELDS */}
+						{fields
+							.filter(({ page }) => page === activePage)
+							.map(({ type, rectangle, name, value, checked, path = '' }, i) => {
+								if (type === 'signature') {
+									return (
+										<svg
+											key={i}
+											height={pdfDoc?.getPage(activePage - 1).getSize()?.height}
+											width={pdfDoc?.getPage(activePage - 1).getSize()?.width}
+											fill="none"
+											stroke="black"
+											style={{
+												position: 'absolute',
+												zIndex: '100',
+												top: 0,
+											}}
+										>
+											<path fill="none" d={path}></path>
+										</svg>
+									);
+								}
+
 								return (
-									<svg
+									<input
 										key={i}
-										height={pdfDoc?.getPage(activePage - 1).getSize()?.height}
-										width={pdfDoc?.getPage(activePage - 1).getSize()?.width}
-										fill="none"
-										stroke="black"
+										value={value}
+										checked={Boolean(checked)}
+										onChange={handleInputChange}
 										style={{
+											display: 'block',
+											height: `${rectangle.height}px`,
+											width: `${rectangle.width}px`,
 											position: 'absolute',
-											zIndex: '100',
-											top: 0,
+											bottom: rectangle.y,
+											left: rectangle.x,
+											backgroundColor: 'transparent',
+											border: 'none',
+											padding: '0',
+											zIndex: '200',
 										}}
-									>
-										<path fill="none" d={path}></path>
-									</svg>
+										type={
+											type === 'PDFCheckBox'
+												? 'checkbox'
+												: type === 'PDFRadioGroup'
+												? 'radio'
+												: 'text'
+										}
+										id={name}
+										name={name}
+										data-field-type={type}
+									/>
 								);
-							}
-
-							return (
-								<input
-									key={i}
-									value={value}
-									checked={Boolean(checked)}
-									onChange={handleInputChange}
-									style={{
-										display: 'block',
-										height: `${rectangle.height}px`,
-										width: `${rectangle.width}px`,
-										position: 'absolute',
-										bottom: rectangle.y,
-										left: rectangle.x,
-										backgroundColor: 'transparent',
-										border: 'none',
-										padding: '0',
-										zIndex: '200',
-									}}
-									type={
-										type === 'PDFCheckBox'
-											? 'checkbox'
-											: type === 'PDFRadioGroup'
-											? 'radio'
-											: 'text'
-									}
-									id={name}
-									name={name}
-									data-field-type={type}
-								/>
-							);
-						})}
+							})}
+					</div>
+				) : null}
+				<div>
+					<button onClick={handleSavePdf} style={{ margin: '20px auto', display: 'block' }}>
+						SAVE PDF
+					</button>
 				</div>
-			) : null}
+			</div>
+			<>
+				{updatedPdfBuffer ? (
+					<iframe
+						src={
+							URL.createObjectURL(new Blob([updatedPdfBuffer], { type: 'application/pdf' })) +
+							'#toolbar=0&view=FitV'
+						}
+						style={{
+							border: 'none',
+							height: '80vh',
+							width: '100%',
+							display: 'inline-block',
+						}}
+					></iframe>
+				) : null}
+			</>
 		</div>
 	);
 };
