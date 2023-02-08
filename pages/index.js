@@ -13,47 +13,52 @@ import Signature from '../components/signature';
 import PdfAsImage from '../components/pdfAsImage';
 import MapAcroFields from '../components/mapAcroFields';
 import Pdfjs from '../components/pdfjs';
-import Pagination from '../components/paginationTest';
+import PDFViewer from '../components/PDFViewer';
+import Accordions from '../components/accordions';
 
 export default function Home() {
-	const [active, setActive] = React.useState(9);
+	const [active, setActive] = React.useState(10);
 
 	const BUTTONS = [
-		{
-			id: 0,
-			title: 'PDF TRON',
-		},
+		// {
+		// 	id: 0,
+		// 	title: 'PDF TRON',
+		// },
 		// {
 		// 	id: 1,
 		// 	title: 'PS PDF KIT',
 		// },
+		// {
+		// 	id: 2,
+		// 	title: 'REACT PDF',
+		// },
+		// {
+		// 	id: 3,
+		// 	title: 'PDF JS EXPRESS',
+		// },
+		// {
+		// 	id: 4,
+		// 	title: 'SIGNATURE',
+		// },
+		// {
+		// 	id: 6,
+		// 	title: 'PDF AS IMAGE',
+		// },
+		// {
+		// 	id: 7,
+		// 	title: 'MAP ACRO FIELDS',
+		// },
+		// {
+		// 	id: 8,
+		// 	title: 'PDF JS',
+		// },
+		// {
+		// 	id: 9,
+		// 	title: 'PAGINATION',
+		// },
 		{
-			id: 2,
-			title: 'REACT PDF',
-		},
-		{
-			id: 3,
-			title: 'PDF JS EXPRESS',
-		},
-		{
-			id: 4,
-			title: 'SIGNATURE',
-		},
-		{
-			id: 6,
-			title: 'PDF AS IMAGE',
-		},
-		{
-			id: 7,
-			title: 'MAP ACRO FIELDS',
-		},
-		{
-			id: 8,
-			title: 'PDF JS',
-		},
-		{
-			id: 9,
-			title: 'PAGINATION',
+			id: 10,
+			title: 'ACCORDIONS',
 		},
 	];
 
@@ -116,7 +121,9 @@ function Main({ active }) {
 		case 8:
 			return <Pdfjs />;
 		case 9:
-			return <Pagination />;
+			return <PDFViewer />;
+		case 10:
+			return <Accordions />;
 		default:
 			return null;
 	}

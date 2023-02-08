@@ -12,6 +12,10 @@
 		"move-static-pdftron": "cp -a ./node_modules/@pdftron/webviewer/public/. public/webviewer"
 	},
 	"dependencies": {
+		"@emotion/react": "^11.10.5",
+		"@emotion/styled": "^11.10.5",
+		"@mui/icons-material": "^5.11.0",
+		"@mui/material": "^5.11.8",
 		"@pdftron/pdfjs-express": "^8.7.0",
 		"@pdftron/webviewer": "^8.9.0",
 		"buffer": "^6.0.3",

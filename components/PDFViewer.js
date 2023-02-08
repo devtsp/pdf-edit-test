@@ -1,29 +1,15 @@
 import React from 'react';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, rgb } from 'pdf-lib';
+import IconButton from '@mui/material/IconButton';
+import CancelIcon from '@mui/icons-material/Cancel';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
-const CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO = {
-	documentRawName: 'Consent to Share Behavioral Health Information for Care Coordination Purposes',
-	acroFieldsConfig: [
-		{
-			page: 1,
-			fieldsRange: [0, 4],
-		},
-		{
-			page: 2,
-			fieldsRange: [5, 21],
-		},
-		{
-			page: 3,
-			fieldsRange: [22, 38],
-		},
-		{
-			page: 4,
-			fieldsRange: [39, 54],
-		},
-	],
-};
+import { ACROFORMS_CONFIG } from '../constants/acroformsConfig';
+import { Button } from '@mui/material';
 
-const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
+const PDFViewer = ({ docConfig = ACROFORMS_CONFIG.CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 	const canvasRef = React.useRef();
 	const clearCanvasBtnRef = React.useRef();
 	// signature related
@@ -44,9 +30,11 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 		// Map pdf-lib acrofields to build custom objects
 		const customFields = formFields.map((field, i) => {
 			const widgets = field.acroField.getWidgets();
-			const { page } = docConfig.acroFieldsConfig.find(
-				({ fieldsRange }) => i >= fieldsRange[0] && i <= fieldsRange[1]
-			);
+			const { page } = docConfig.acroFieldsConfig
+				? docConfig.acroFieldsConfig.find(
+						({ fieldsRange }) => i >= fieldsRange[0] && i <= fieldsRange[1]
+				  )
+				: { page: 1 };
 			return {
 				checked: false,
 				value: '',
@@ -56,7 +44,6 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 				page,
 			};
 		});
-
 		setPdfDoc(pdfDoc);
 		setFields(customFields);
 	}
@@ -131,7 +118,7 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 		form.flatten();
 		const pdfBytes = await pdfDoc.save();
 		setUpdatedPdfBuffer(pdfBytes);
-		getPdfInfo(`forms/${docConfig.documentRawName}/${docConfig.documentRawName}.pdf`);
+		getPdfInfo(`forms/${docConfig.documentName}/${docConfig.documentName}.pdf`);
 	}
 
 	// Set all custom event handlers for canvas
@@ -217,74 +204,109 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 
 	// Fetch and collect all pdf needed info, such as size, acro fields, etc
 	React.useEffect(() => {
-		getPdfInfo(`forms/${docConfig.documentRawName}/${docConfig.documentRawName}.pdf`);
+		getPdfInfo(`forms/${docConfig.documentName}/${docConfig.documentName}.pdf`);
 	}, []);
 
 	return (
-		<div style={{ display: 'flex', margin: '0 auto' }}>
+		<div
+			style={{
+				display: 'flex',
+				margin: '0 auto',
+				backgroundColor: 'lightgray',
+			}}
+		>
 			<div
-				style={{ display: 'flex', flexDirection: 'column', width: 'fit-content', margin: '0 auto' }}
+				style={{
+					display: 'flex',
+					flexDirection: 'column',
+					width: 'fit-content',
+					margin: '0 auto',
+				}}
 			>
 				{/* TOP CTRL BUTTONS */}
 				<div
 					style={{
 						display: 'flex',
-						padding: '10px 0',
+						padding: '10px 0 5px',
 						userSelect: 'none',
-						height: '40px',
+						height: '30px',
 						alignItems: 'center',
 					}}
 				>
-					<span
+					<IconButton
 						onClick={() => setActivePage((prev) => (prev === 1 ? prev : --prev))}
 						style={{
-							padding: '0 10px',
 							cursor: 'pointer',
 							opacity: activePage === 1 ? '.2' : '1',
 							pointerEvents: activePage === 1 ? 'none' : 'all',
+							display: 'flex',
+							alignItems: 'center',
+							fontSize: '16px',
 						}}
 					>
-						◀
+						<ArrowBackIosNewIcon sx={{ fontSize: 'inherit' }} />
+					</IconButton>
+					<span>
+						Page {activePage}/{pdfDoc?.getPageCount()}
 					</span>
-
-					<span style={{}}>
-						{' '}
-						Page {activePage}/{pdfDoc?.getPageCount()}{' '}
-					</span>
-					<span
+					<IconButton
 						onClick={() => setActivePage((prev) => (prev < pdfDoc?.getPageCount() ? ++prev : prev))}
 						style={{
-							padding: '0 10px',
 							cursor: 'pointer',
 							opacity: activePage === pdfDoc?.getPageCount() ? '.2' : '1',
 							pointerEvents: activePage === pdfDoc?.getPageCount() ? 'none' : 'all',
+							display: 'flex',
+							alignItems: 'center',
+							fontSize: '16px',
 						}}
 					>
-						▶
-					</span>
-					<div style={{ marginLeft: 'auto', gap: '10px', display: 'flex', alignItems: 'center' }}>
+						<ArrowForwardIosIcon sx={{ fontSize: 'inherit' }} />
+					</IconButton>
+					<div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
 						{!isSigning ? (
-							<button
-								onClick={() => setIsSigning((prev) => !prev)}
-								style={{
-									color: isSigning ? 'white' : 'black',
-									backgroundColor: isSigning ? 'red' : 'transparent',
-									border: '1px solid',
-									borderRadius: '2px',
-									borderColor: isSigning ? 'red' : 'grey',
-								}}
-							>
-								Sign
-							</button>
+							<div style={{ display: 'flex', gap: '10px' }}>
+								<Button
+									variant="contained"
+									onClick={() => setIsSigning((prev) => !prev)}
+									sx={{ fontSize: '12px', height: 'fit-content', py: '2px' }}
+								>
+									SIGN
+								</Button>
+								<Button
+									variant="contained"
+									onClick={handleSavePdf}
+									sx={{ fontSize: '12px', height: 'fit-content', py: '2px' }}
+								>
+									SAVE PDF
+								</Button>
+							</div>
 						) : null}
 						{isSigning ? (
 							<>
-								<span onClick={handleSaveSignature} style={{ cursor: 'pointer', fontSize: '22px' }}>
-									✔
-								</span>
-								<span ref={clearCanvasBtnRef} style={{ cursor: 'pointer', fontSize: '18px' }}>
-									❌
-								</span>
+								<IconButton
+									onClick={handleSaveSignature}
+									style={{
+										cursor: 'pointer',
+										fontSize: '22px',
+										color: 'darkgreen',
+										display: 'flex',
+										alignItems: 'center',
+									}}
+								>
+									<CheckCircleIcon />
+								</IconButton>
+								<IconButton
+									ref={clearCanvasBtnRef}
+									style={{
+										cursor: 'pointer',
+										fontSize: '22px',
+										color: 'darkred',
+										display: 'flex',
+										alignItems: 'center',
+									}}
+								>
+									<CancelIcon />
+								</IconButton>
 							</>
 						) : null}
 					</div>
@@ -309,12 +331,12 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 									height: pdfDoc?.getPage(activePage - 1).getSize()?.height,
 									width: pdfDoc?.getPage(activePage - 1).getSize()?.width,
 									position: 'absolute',
-									backgroundColor: 'rgba(162, 240, 236,.1)',
+									backgroundColor: 'rgba(162, 240, 236,.2)',
 									left: '0',
 									top: '0',
 									zIndex: '300',
-									outline: '5px dashed rgb(162, 240, 236)',
-									...(isSigning && { cursor: 'url("icons/pen.png") 0 32, crosshair' }),
+									outline: '2px dashed teal',
+									...(isSigning && { cursor: 'crosshair' }),
 									touchAction: 'none',
 								}}
 							></canvas>
@@ -328,7 +350,7 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 								width: pdfDoc?.getPage(activePage - 1).getSize()?.width,
 								pointerEvents: isSigning ? 'none' : 'all',
 								userSelect: 'none',
-								backgroundImage: `url("forms/${docConfig.documentRawName}/${activePage}_${docConfig.documentRawName}.png")`,
+								backgroundImage: `url("forms/${docConfig.documentName}/${activePage}_${docConfig.documentName}.png")`,
 								backgroundSize: 'contain',
 							}}
 						></div>
@@ -363,7 +385,6 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 										checked={Boolean(checked)}
 										onChange={handleInputChange}
 										style={{
-											display: 'block',
 											height: `${rectangle.height}px`,
 											width: `${rectangle.width}px`,
 											position: 'absolute',
@@ -373,6 +394,7 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 											border: 'none',
 											padding: '0',
 											zIndex: '200',
+											border: 'none',
 										}}
 										type={
 											type === 'PDFCheckBox'
@@ -389,11 +411,6 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 							})}
 					</div>
 				) : null}
-				<div>
-					<button onClick={handleSavePdf} style={{ margin: '20px auto', display: 'block' }}>
-						SAVE PDF
-					</button>
-				</div>
 			</div>
 			<>
 				{updatedPdfBuffer ? (
@@ -404,7 +421,6 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 						}
 						style={{
 							border: 'none',
-							height: '80vh',
 							width: '100%',
 							display: 'inline-block',
 						}}
@@ -415,4 +431,4 @@ const Pagination = ({ docConfig = CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 	);
 };
 
-export default Pagination;
+export default PDFViewer;
