@@ -1,13 +1,12 @@
 import React from 'react';
-import { PDFDocument, rgb } from 'pdf-lib';
-import IconButton from '@mui/material/IconButton';
+import { PDFDocument } from 'pdf-lib';
+import { IconButton, Button } from '@mui/material';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
 import { ACROFORMS_CONFIG } from '../constants/acroformsConfig';
-import { Button } from '@mui/material';
 
 const PDFViewer = ({ docConfig = ACROFORMS_CONFIG.CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO }) => {
 	const canvasRef = React.useRef();
@@ -118,7 +117,7 @@ const PDFViewer = ({ docConfig = ACROFORMS_CONFIG.CONSENT_SHARE_BEHAVIORAL_HEALT
 		form.flatten();
 		const pdfBytes = await pdfDoc.save();
 		setUpdatedPdfBuffer(pdfBytes);
-		getPdfInfo(`forms/${docConfig.documentName}/${docConfig.documentName}.pdf`);
+		getPdfInfo(`documents/to_sign/${docConfig.documentName}/${docConfig.documentName}.pdf`);
 	}
 
 	// Set all custom event handlers for canvas
@@ -204,7 +203,7 @@ const PDFViewer = ({ docConfig = ACROFORMS_CONFIG.CONSENT_SHARE_BEHAVIORAL_HEALT
 
 	// Fetch and collect all pdf needed info, such as size, acro fields, etc
 	React.useEffect(() => {
-		getPdfInfo(`forms/${docConfig.documentName}/${docConfig.documentName}.pdf`);
+		getPdfInfo(`documents/to_sign/${docConfig.documentName}/${docConfig.documentName}.pdf`);
 	}, []);
 
 	return (
@@ -227,7 +226,7 @@ const PDFViewer = ({ docConfig = ACROFORMS_CONFIG.CONSENT_SHARE_BEHAVIORAL_HEALT
 				<div
 					style={{
 						display: 'flex',
-						padding: '10px 0 5px',
+						padding: '5px 0',
 						userSelect: 'none',
 						height: '30px',
 						alignItems: 'center',
@@ -350,7 +349,7 @@ const PDFViewer = ({ docConfig = ACROFORMS_CONFIG.CONSENT_SHARE_BEHAVIORAL_HEALT
 								width: pdfDoc?.getPage(activePage - 1).getSize()?.width,
 								pointerEvents: isSigning ? 'none' : 'all',
 								userSelect: 'none',
-								backgroundImage: `url("forms/${docConfig.documentName}/${activePage}_${docConfig.documentName}.png")`,
+								backgroundImage: `url("documents/to_sign/${docConfig.documentName}/${activePage}_${docConfig.documentName}.png")`,
 								backgroundSize: 'contain',
 							}}
 						></div>
@@ -359,7 +358,51 @@ const PDFViewer = ({ docConfig = ACROFORMS_CONFIG.CONSENT_SHARE_BEHAVIORAL_HEALT
 						{fields
 							.filter(({ page }) => page === activePage)
 							.map(({ type, rectangle, name, value, checked, path = '' }, i) => {
-								if (type === 'signature') {
+								if (type === 'PDFTextField') {
+									return (
+										<textarea
+											key={i}
+											id={name}
+											name={name}
+											value={value}
+											onChange={handleInputChange}
+											style={{
+												height: `${rectangle.height}px`,
+												width: `${rectangle.width}px`,
+												position: 'absolute',
+												bottom: rectangle.y,
+												left: rectangle.x,
+												backgroundColor: 'transparent',
+												border: 'none',
+												padding: '0',
+												zIndex: '200',
+												resize: 'none',
+											}}
+										/>
+									);
+								} else if (type === 'PDFCheckBox') {
+									return (
+										<input
+											key={i}
+											type="checkbox"
+											checked={Boolean(checked)}
+											onChange={handleInputChange}
+											id={name}
+											name={name}
+											style={{
+												height: `${rectangle.height}px`,
+												width: `${rectangle.width}px`,
+												bottom: rectangle.y,
+												left: rectangle.x,
+												position: 'absolute',
+												backgroundColor: 'transparent',
+												border: 'none',
+												padding: '0',
+												zIndex: '200',
+											}}
+										/>
+									);
+								} else if (type === 'signature') {
 									return (
 										<svg
 											key={i}
@@ -377,37 +420,6 @@ const PDFViewer = ({ docConfig = ACROFORMS_CONFIG.CONSENT_SHARE_BEHAVIORAL_HEALT
 										</svg>
 									);
 								}
-
-								return (
-									<input
-										key={i}
-										value={value}
-										checked={Boolean(checked)}
-										onChange={handleInputChange}
-										style={{
-											height: `${rectangle.height}px`,
-											width: `${rectangle.width}px`,
-											position: 'absolute',
-											bottom: rectangle.y,
-											left: rectangle.x,
-											backgroundColor: 'transparent',
-											border: 'none',
-											padding: '0',
-											zIndex: '200',
-											border: 'none',
-										}}
-										type={
-											type === 'PDFCheckBox'
-												? 'checkbox'
-												: type === 'PDFRadioGroup'
-												? 'radio'
-												: 'text'
-										}
-										id={name}
-										name={name}
-										data-field-type={type}
-									/>
-								);
 							})}
 					</div>
 				) : null}
