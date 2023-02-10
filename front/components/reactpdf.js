@@ -1,15 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Buffer } from 'buffer/';
 
 import { Document, Page } from 'react-pdf/dist/esm/entry.webpack5';
 
-export default function ReactPdf({
-	documentPath = 'Acknowledgement HIPAA.pdf',
-	// documentPath = 'dummy.pdf',
-	// documentPath = 'test.avif',
-}) {
-	const [numPages, setNumPages] = useState(null);
-	const [pageNumber, setPageNumber] = useState(1);
+export function Reactpdf({ documentPath = 'Acknowledgement HIPAA.pdf' }) {
+	const [numPages, setNumPages] = React.useState(null);
+	const [pageNumber, setPageNumber] = React.useState(1);
 	const [pdf64, setPdf64] = React.useState([]);
 
 	function onDocumentLoadSuccess({ numPages }) {

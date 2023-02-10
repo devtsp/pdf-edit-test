@@ -1,7 +1,7 @@
 import React from 'react';
 import { PDFDocument } from 'pdf-lib';
 
-export default function PdfTron({ initialDoc = 'Acknowledgement HIPAA.pdf' }) {
+export function PdftronViewer({ initialDoc = 'Acknowledgement HIPAA.pdf' }) {
 	const viewer = React.useRef(null);
 	const [updatedPdfBuffer, setUpdatedPdfBuffer] = React.useState();
 	const [viewerInstance, setViewerInstance] = React.useState();

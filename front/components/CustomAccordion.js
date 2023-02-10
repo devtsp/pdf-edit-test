@@ -40,7 +40,7 @@ const AccordionDetails = styled(MuiAccordionDetails)(({ theme }) => ({
 	borderTop: '1px solid rgba(0, 0, 0, .125)',
 }));
 
-export default function CustomAccordion({
+export function CustomAccordion({
 	expanded,
 	setExpanded,
 	controlled,

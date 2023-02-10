@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function PsPdfkit({ initialDoc = 'Acknowledgement HIPAA.pdf' }) {
+export function Pspdfkit({ initialDoc = 'Acknowledgement HIPAA.pdf' }) {
 	const containerRef = React.useRef(null);
 	const [instance, setInstance] = React.useState();
 	const [updatedPdfBuffer, setUpdatedPdfBuffer] = React.useState();
@@ -17,7 +17,7 @@ export default function PsPdfkit({ initialDoc = 'Acknowledgement HIPAA.pdf' }) {
 				container,
 				document: initialDoc,
 				baseUrl: `${window.location.protocol}//${window.location.host}/`,
-			}).then(instance => {
+			}).then((instance) => {
 				setInstance(instance);
 			});
 		})();
@@ -36,10 +36,7 @@ export default function PsPdfkit({ initialDoc = 'Acknowledgement HIPAA.pdf' }) {
 				SAVE
 			</button>
 			<br />
-			<div
-				ref={containerRef}
-				style={{ height: '80vh', width: '50%', display: 'inline-block' }}
-			/>
+			<div ref={containerRef} style={{ height: '80vh', width: '50%', display: 'inline-block' }} />
 			<iframe
 				style={{
 					height: '80vh',
@@ -49,9 +46,7 @@ export default function PsPdfkit({ initialDoc = 'Acknowledgement HIPAA.pdf' }) {
 				}}
 				src={
 					updatedPdfBuffer
-						? URL.createObjectURL(
-								new Blob([updatedPdfBuffer], { type: 'application/pdf' })
-						  )
+						? URL.createObjectURL(new Blob([updatedPdfBuffer], { type: 'application/pdf' }))
 						: initialDoc
 				}
 			></iframe>

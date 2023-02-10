@@ -1,36 +1,36 @@
-export const ACROFORMS_CONFIG = {
-	CONSENT_SHARE_BEHAVIORAL_HEALTH_INFO: {
-		documentName: 'Consent to Share Behavioral Health Information for Care Coordination Purposes',
+export const ACROFORMS_CONFIG = [
+	{
+		documentAlias: 'Consent to Share Behavioral Health Information',
 		// This is hardcoded for now, because we don't found a way to track page acrofield with pdf-lib
-		acroFieldsConfig: [
+		acrofieldsRanges: [
 			{
 				page: 1,
-				fieldsRange: [0, 4],
+				fieldsRanges: [0, 4],
 			},
 			{
 				page: 2,
-				fieldsRange: [5, 21],
+				fieldsRanges: [5, 21],
 			},
 			{
 				page: 3,
-				fieldsRange: [22, 38],
+				fieldsRanges: [22, 38],
 			},
 			{
 				page: 4,
-				fieldsRange: [39, 54],
+				fieldsRanges: [39, 54],
 			},
 		],
 	},
-	ACKNOWLEDGEMENT_HIPAA: {
-		documentName: 'Acknowledgement HIPAA',
+	{
+		documentAlias: 'Acknowledgement HIPAA',
 	},
-	CONSENT_FOR_TREATMENT: {
-		documentName: 'Consent for Treatment',
+	{
+		documentAlias: 'Consent for Treatment',
 	},
-	OCIRT_CRISIS_PLAN: {
-		documentName: 'OCIRT CRISIS PLAN',
+	{
+		documentAlias: 'OCIRT Crisis Plan',
 	},
-	RECIPIENT_RIGHTS_SIGNATURE: {
-		documentName: 'Recipient Rights Signature',
+	{
+		documentAlias: 'Recipient Rights Signature',
 	},
-};
+];

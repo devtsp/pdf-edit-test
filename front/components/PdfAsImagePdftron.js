@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function PdfAsImage({ initialDoc = 'Acknowledgement HIPAA.pdf' }) {
+export function PdfAsImagePdftron({ initialDoc = 'Acknowledgement HIPAA.pdf' }) {
 	const viewerRef = React.useRef();
 	const [viewerInstance, setViewerInstance] = React.useState();
 	const [pdfImage, setPdfImage] = React.useState();
