@@ -9,7 +9,7 @@ export function PdfAsImagePdftron({ initialDoc = 'Acknowledgement HIPAA.pdf' }) 
 			WebViewer(
 				{
 					fullAPI: true,
-					path: '/webviewer',
+					path: '/lib/webviewer',
 					initialDoc,
 				},
 				viewerRef.current

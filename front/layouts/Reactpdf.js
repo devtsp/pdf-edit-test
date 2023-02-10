@@ -1,6 +1,5 @@
 import React from 'react';
 import { Buffer } from 'buffer/';
-
 import { Document, Page } from 'react-pdf/dist/esm/entry.webpack5';
 
 export function Reactpdf({ documentPath = 'Acknowledgement HIPAA.pdf' }) {

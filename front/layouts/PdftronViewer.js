@@ -10,7 +10,7 @@ export function PdftronViewer({ initialDoc = 'Acknowledgement HIPAA.pdf' }) {
 		import('@pdftron/webviewer').then(() => {
 			WebViewer(
 				{
-					path: '/webviewer',
+					path: '/lib/webviewer',
 					initialDoc,
 				},
 				viewer.current

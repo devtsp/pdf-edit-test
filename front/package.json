@@ -7,9 +7,10 @@
 		"build": "next build",
 		"start": "next start",
 		"lint": "next lint",
-		"move-static-pdfjsexpress": "cp -a ./node_modules/@pdftron/pdfjs-express/public/. ./public/pdfjsexpress",
-		"move-static-pspdfkit": "cp -R ./node_modules/pspdfkit/dist/pspdfkit-lib public/pspdfkit-lib",
-		"move-static-pdftron": "cp -a ./node_modules/@pdftron/webviewer/public/. public/webviewer"
+		"move-static-pdfjs": "cp ./node_modules/pdfjs-dist/build/pdf.worker.min.js ./public/lib",
+		"move-static-pdfjsexpress": "cp -a ./node_modules/@pdftron/pdfjs-express/public/. ./public/lib/pdfjsexpress",
+		"move-static-pspdfkit": "cp -R ./node_modules/pspdfkit/dist/pspdfkit-lib public/lib/pspdfkit-lib",
+		"move-static-pdftron": "cp -a ./node_modules/@pdftron/webviewer/public/. public/lib/webviewer"
 	},
 	"dependencies": {
 		"@emotion/react": "^11.10.5",
@@ -21,6 +22,7 @@
 		"buffer": "^6.0.3",
 		"next": "12.3.1",
 		"pdf-lib": "^1.17.1",
+		"pdfjs-dist": "^3.3.122",
 		"pspdfkit": "^2022.4.3",
 		"react": "18.2.0",
 		"react-dom": "18.2.0",

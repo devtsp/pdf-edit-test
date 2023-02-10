@@ -14,7 +14,7 @@ export function PdfjsExpress({ initialDoc = 'Acknowledgement HIPAA.pdf' }) {
 		import('@pdftron/pdfjs-express').then(() => {
 			WebViewer(
 				{
-					path: '/pdfjsexpress',
+					path: '/lib/pdfjsexpress',
 					initialDoc,
 				},
 				viewer.current

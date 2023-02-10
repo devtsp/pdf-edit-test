@@ -6,7 +6,7 @@ import MuiAccordionSummary from '@mui/material/AccordionSummary';
 import MuiAccordionDetails from '@mui/material/AccordionDetails';
 import { Box, Typography } from '@mui/material';
 
-const Accordion = styled((props) => (
+const StyledAccordion = styled((props) => (
 	<MuiAccordion disableGutters elevation={0} square {...props} />
 ))(({ theme }) => ({
 	border: `1px solid ${theme.palette.divider}`,
@@ -40,7 +40,7 @@ const AccordionDetails = styled(MuiAccordionDetails)(({ theme }) => ({
 	borderTop: '1px solid rgba(0, 0, 0, .125)',
 }));
 
-export function CustomAccordion({
+export function Accordion({
 	expanded,
 	setExpanded,
 	controlled,
@@ -64,7 +64,7 @@ export function CustomAccordion({
 
 	return (
 		<Box sx={sx}>
-			<Accordion
+			<StyledAccordion
 				disabled={disabled}
 				expanded={_expanded === panelKey}
 				onChange={handleChange(panelKey)}
@@ -74,7 +74,7 @@ export function CustomAccordion({
 					<Typography>{title}</Typography>
 				</AccordionSummary>
 				<AccordionDetails>{children}</AccordionDetails>
-			</Accordion>
+			</StyledAccordion>
 		</Box>
 	);
 }

@@ -30,8 +30,8 @@ const db = {
 		],
 	},
 
-	getById(table, id) {
-		return this._db[table].find(({ Id }) => Id === id);
+	get(table, id) {
+		return id ? this._db[table].find(({ Id }) => Id === id) : this._db[table];
 	},
 };
 

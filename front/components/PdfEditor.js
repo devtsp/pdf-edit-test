@@ -8,7 +8,7 @@ import { IoIosArrowDropleftCircle, IoIosArrowDroprightCircle } from 'react-icons
 
 import { ACROFORMS_CONFIG } from '../constants/acroformsConfig';
 
-export function CustomPdfEditor({ optDocument, handleSubmit }) {
+export function PdfEditor({ optDocument, handleSubmit }) {
 	const canvasRef = React.useRef();
 	const clearCanvasBtnRef = React.useRef();
 	// signature related
