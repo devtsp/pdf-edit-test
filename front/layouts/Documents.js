@@ -33,7 +33,7 @@ function useDocuments() {
 	const [expanded, setExpanded] = React.useState(0);
 
 	React.useEffect(() => {
-		(async () => {
+		async function fetchOptDocuments() {
 			try {
 				const optDocuments = await (await fetch('http://localhost:8080/optDocuments')).json();
 				console.log(optDocuments);
@@ -41,7 +41,9 @@ function useDocuments() {
 			} catch (error) {
 				console.log(error);
 			}
-		})();
+		}
+
+		fetchOptDocuments();
 	}, []);
 
 	return {
