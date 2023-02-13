@@ -1,5 +1,6 @@
 import React from 'react';
 import { PDFDocument, PDFTextField, PDFCheckBox } from 'pdf-lib';
+import { Buffer } from 'buffer/';
 import { useDoubleTap } from 'use-double-tap';
 import { IconButton, Button } from '@mui/material';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -9,6 +10,7 @@ import { IoIosArrowDropleftCircle, IoIosArrowDroprightCircle } from 'react-icons
 import { ACROFORMS_CONFIG } from '../constants/acroformsConfig';
 
 export function PdfEditor({ optDocument, handleSubmit }) {
+	// const [pdfjs, setPdfjs] = React.useState();
 	const canvasRef = React.useRef();
 	const clearCanvasBtnRef = React.useRef();
 	// signature related
@@ -28,15 +30,19 @@ export function PdfEditor({ optDocument, handleSubmit }) {
 		({ documentAlias }) => documentAlias === optDocument.DocumentAlias
 	);
 
-	const ORIGINAL_PDF_PATH = encodeURI(
-		`/documents/to_sign/${optDocument.DocumentAlias}/pdf/${optDocument.DocumentName}`
-	);
-
-	async function getPdfInfo(documentPath) {
-		const formPdfBytes = await fetch(documentPath).then((res) => res.arrayBuffer());
+	// ACROFORM FIELDS CONFIG HARDCODED
+	async function getPdfInfo(base64EncodedPdf) {
+		const formPdfBytes = await fetch(base64EncodedPdf).then((res) => res.arrayBuffer());
 		const pdfDoc = await PDFDocument.load(formPdfBytes);
 		const form = pdfDoc.getForm();
 		const formFields = form.getFields();
+		const pages = pdfDoc.getPages();
+
+		// attempt to get field refs in page
+		// for (let page = 0; page < pages.length; page++) {
+		// 	const annotations = pages[page].node.Annots();
+		// 	console.log(annotations.asArray());
+		// }
 
 		// Map pdf-lib acrofields to build custom objects
 		const customFields = formFields.map((field, i) => {
@@ -134,7 +140,7 @@ export function PdfEditor({ optDocument, handleSubmit }) {
 		const pdfBytes = await pdfDoc.save();
 		// setUpdatedPdfBuffer(pdfBytes);
 		handleSubmit(pdfBytes, optDocument);
-		getPdfInfo(ORIGINAL_PDF_PATH);
+		getPdfInfo(optDocument.base64EncodedPdf);
 	}
 
 	// Set all custom event handlers for canvas
@@ -220,8 +226,21 @@ export function PdfEditor({ optDocument, handleSubmit }) {
 
 	// Fetch and collect all pdf needed info, such as size, acro fields, etc
 	React.useEffect(() => {
-		getPdfInfo(ORIGINAL_PDF_PATH);
+		getPdfInfo(optDocument.base64EncodedPdf);
 	}, []);
+
+	//attempt to get field page number (doesn't work)
+	// React.useEffect(() => {
+	// 	(async function () {
+	// 		// We import this here so that it's only loaded during client-side rendering.
+	// 		const pdfJS = await import('pdfjs-dist/build/pdf');
+	// 		pdfJS.GlobalWorkerOptions.workerSrc = window.location.origin + '/lib/pdf.worker.min.js';
+	// 		setPdfjs(pdfJS);
+	// 		const pdf = await pdfJS.getDocument('new_document.pdf').promise;
+	// 		const annots = await pdf.getFieldObjects();
+	// 		console.log(annots);
+	// 	})();
+	// }, []);
 
 	return (
 		// ACCORDION INNER SPACE
@@ -233,6 +252,7 @@ export function PdfEditor({ optDocument, handleSubmit }) {
 				padding: '10px 0',
 			}}
 		>
+			<img />
 			{/* PAGE / ARROWS / TOOLBAR CONTAINER */}
 			<div
 				style={{
@@ -326,9 +346,7 @@ export function PdfEditor({ optDocument, handleSubmit }) {
 									width: pdfDoc.getPage(activePage - 1).getSize().width,
 									position: 'relative',
 									userSelect: 'none',
-									backgroundImage: `url("/documents/to_sign/${
-										optDocument.DocumentAlias
-									}/png/${activePage}_${optDocument.DocumentName.replace(/.pdf/, '')}.png")`,
+									backgroundImage: `url("${optDocument.pngPreviews[activePage - 1]}")`,
 									backgroundSize: 'contain',
 								}}
 							>
@@ -473,12 +491,10 @@ export function PdfEditor({ optDocument, handleSubmit }) {
 					</div>
 					{/* SAVE BTN */}
 					<Button
+						size="small"
 						variant="contained"
 						onClick={handleSavePdf}
 						sx={{
-							fontSize: '16px',
-							height: 'fit-content',
-							py: '2px',
 							mt: '10px',
 						}}
 					>

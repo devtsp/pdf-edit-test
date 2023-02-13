@@ -30,13 +30,12 @@ export function Documents() {
 
 function useDocuments() {
 	const [optDocuments, setOptDocuments] = React.useState([]);
-	const [expanded, setExpanded] = React.useState(0);
+	const [expanded, setExpanded] = React.useState(4);
 
 	React.useEffect(() => {
 		async function fetchOptDocuments() {
 			try {
 				const optDocuments = await (await fetch('http://localhost:8080/optDocuments')).json();
-				console.log(optDocuments);
 				setOptDocuments(optDocuments);
 			} catch (error) {
 				console.log(error);
